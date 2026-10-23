@@ -1,0 +1,111 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------
+    // Fungsi bantu
+    // ------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Pemilih = pengguna Anonymous Auth.
+    function isVoter() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    // Admin KPU = login Email/Password dengan salah satu dari 3 email resmi.
+    // WAJIB sama dengan VITE_ADMIN_EMAILS dan akun yang dibuat di Firebase Auth.
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email.lower() in [
+          'admin1@kpu.ac.id',
+          'admin2@kpu.ac.id',
+          'admin3@kpu.ac.id'
+        ];
+    }
+
+    // ID kandidat harus sama dengan src/data.js.
+    function validAiId(id) {
+      return id in ['ai-01', 'ai-02', 'ai-03'];
+    }
+    function validKabemId(id) {
+      return id in ['bem-01', 'bem-02'];
+    }
+
+    // ------------------------------------------------------------------
+    // dpt/{npm} — identitas pemilih (TERPISAH dari kotak suara)
+    // Field: npm, nama, email, angkatan, hasVoted, votedAt
+    // ------------------------------------------------------------------
+    match /dpt/{npm} {
+      // Pemilih hanya boleh membaca SATU dokumen berdasarkan NPM (tidak bisa list/scan).
+      allow get: if isAdmin() || isVoter();
+      allow list: if isAdmin();
+
+      // Admin menambah pemilih baru (impor CSV) dengan hasVoted = false.
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll(['npm', 'nama', 'email', 'angkatan', 'hasVoted', 'votedAt'])
+        && request.resource.data.npm == npm
+        && request.resource.data.hasVoted == false
+        && request.resource.data.votedAt == null;
+
+      allow update: if
+        // Admin boleh memperbarui data, tetapi TIDAK boleh membalik status memilih.
+        (isAdmin()
+          && request.resource.data.hasVoted == resource.data.hasVoted
+          && request.resource.data.votedAt == resource.data.votedAt)
+        ||
+        // Pemilih: satu arah false -> true, hanya field hasVoted & votedAt, waktu dari server.
+        (isVoter()
+          && resource.data.hasVoted == false
+          && request.resource.data.hasVoted == true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted', 'votedAt'])
+          && request.resource.data.votedAt == request.time);
+
+      // Hanya pemilih yang belum memilih yang boleh dihapus dari DPT.
+      allow delete: if isAdmin() && resource.data.hasVoted == false;
+    }
+
+    // ------------------------------------------------------------------
+    // votes/{id} — kotak suara ANONIM (tanpa NPM/email/nama/waktu)
+    // ------------------------------------------------------------------
+    match /votes/{ballotId} {
+      allow read: if isAdmin();
+
+      allow create: if isVoter()
+        && request.resource.data.keys().hasOnly(['aiId', 'kabemId'])
+        && request.resource.data.keys().hasAll(['aiId', 'kabemId'])
+        && request.resource.data.aiId is string
+        && request.resource.data.kabemId is string
+        && validAiId(request.resource.data.aiId)
+        && validKabemId(request.resource.data.kabemId);
+
+      // Surat suara tidak dapat diubah atau dihapus oleh siapa pun.
+      allow update, delete: if false;
+    }
+
+    // ------------------------------------------------------------------
+    // stats/{angkatan} — statistik publik partisipasi per angkatan
+    // Field: label, order, total, voted
+    // ------------------------------------------------------------------
+    match /stats/{angkatan} {
+      allow read: if isAdmin() || isVoter();
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        ||
+        // Pemilih hanya boleh menambah `voted` sebanyak tepat 1 (dalam transaksi pemungutan suara).
+        (isVoter()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voted'])
+          && request.resource.data.voted == resource.data.voted + 1
+          && request.resource.data.voted <= resource.data.total);
+    }
+
+    // Semua koleksi lain ditolak.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
