@@ -1,41 +1,46 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BadgeCheck,
   Check,
   CheckCircle2,
-  Crown,
   LayoutDashboard,
   Loader2,
   LogOut,
   Mail,
+  PhoneCall,
   ScrollText,
-  ShieldCheck,
-  Users,
+  UserRound,
+  Vote,
   X,
 } from 'lucide-react'
-import { APP_NAME } from '../data'
+import { useElection } from '../context/electionContext'
 
 /* -------------------------------------------------------------------------- */
 /* Logo & Spinner                                                             */
 /* -------------------------------------------------------------------------- */
 
 export function BrandLogo({ size = 'md', subtitle }) {
+  const { appName } = useElection()
   const isLarge = size === 'lg'
   return (
     <div className="flex items-center gap-3">
-      <span
-        className={`grid shrink-0 place-items-center rounded-xl bg-gold text-card-dark shadow-lg shadow-black/30 ${
-          isLarge ? 'h-14 w-14' : 'h-10 w-10'
+      <div
+        className={`relative grid shrink-0 place-items-center rounded-xl bg-card-dark/70 p-1 border border-gold/25 shadow-lg shadow-black/30 backdrop-blur-sm ${
+          isLarge ? 'h-14 w-14 sm:h-16 sm:w-16' : 'h-11 w-11 sm:h-12 sm:w-12'
         }`}
       >
-        <ShieldCheck className={isLarge ? 'h-8 w-8' : 'h-6 w-6'} aria-hidden="true" />
-      </span>
+        <img
+          src="/images/logo.png"
+          alt={appName}
+          className="h-full w-full object-contain drop-shadow select-none"
+        />
+      </div>
       <div className="leading-tight">
         <p
-          className={`font-extrabold tracking-wide text-gold ${isLarge ? 'text-3xl' : 'text-xl'}`}
+          className={`font-extrabold tracking-wide text-gold ${isLarge ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'}`}
         >
-          {APP_NAME}
+          {appName}
         </p>
         {subtitle && <p className="text-xs font-medium text-gold/60">{subtitle}</p>}
       </div>
@@ -47,20 +52,38 @@ export function Spinner({ className = 'h-5 w-5' }) {
   return <Loader2 className={`${className} animate-spin`} aria-hidden="true" />
 }
 
+/** Foto kandidat dengan placeholder bila `src` kosong atau gagal dimuat. */
+export function CandidatePhoto({ src, alt = '', className = '' }) {
+  const [failedSrc, setFailedSrc] = useState('')
+  if (!src || failedSrc === src) {
+    return (
+      <div
+        role={alt ? 'img' : undefined}
+        aria-label={alt || undefined}
+        className={`grid place-items-center bg-gradient-to-br from-card-dark to-brand/60 text-gold/70 ${className}`}
+      >
+        <UserRound className="h-1/2 w-1/2 max-h-16 max-w-16" aria-hidden="true" />
+      </div>
+    )
+  }
+  return <img src={src} alt={alt} loading="lazy" onError={() => setFailedSrc(src)} className={className} />
+}
+
 /* -------------------------------------------------------------------------- */
 /* Top Navbar (desktop) + Bottom Tab Bar (mobile)                             */
 /* -------------------------------------------------------------------------- */
 
 const NAV_ITEMS_DEFAULT = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
-  { id: 'voteAI', label: 'Voting AI', icon: Users, matches: ['voteAI'] },
-  { id: 'voteKabem', label: 'Voting Kabem', icon: Crown, matches: ['voteKabem', 'review'] },
+  { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'] },
   { id: 'sop', label: 'SOP', icon: ScrollText, matches: ['sop'] },
+  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
 ]
 
 const NAV_ITEMS_VOTED = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
   { id: 'sop', label: 'SOP Pemilihan', icon: ScrollText, matches: ['sop'] },
+  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
 ]
 
 export function TopNav({ current, onNavigate, onLogout, voter }) {
@@ -127,7 +150,13 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
       <nav
         aria-label="Navigasi bawah"
         className={`fixed inset-x-0 bottom-0 z-40 grid h-16 border-t border-gold/15 bg-bean/95 backdrop-blur md:hidden ${
-          items.length === 2 ? 'grid-cols-2' : 'grid-cols-4'
+          items.length === 2
+            ? 'grid-cols-2'
+            : items.length === 3
+              ? 'grid-cols-3'
+              : items.length === 4
+                ? 'grid-cols-4'
+                : 'grid-cols-5'
         }`}
       >
         {items.map(({ id, label, icon: Icon, matches }) => {
@@ -163,9 +192,10 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
 /* -------------------------------------------------------------------------- */
 
 const STEPS = [
-  { id: 1, label: 'Voting AI' },
-  { id: 2, label: 'Voting Kabem' },
-  { id: 3, label: 'Verifikasi & Selesai' },
+  { id: 1, label: 'SOP Pemilihan' },
+  { id: 2, label: 'Pilih AI' },
+  { id: 3, label: 'Pilih Kabem' },
+  { id: 4, label: 'Review & OTP' },
 ]
 
 export function Stepper({ step }) {
@@ -306,10 +336,9 @@ export function CandidateCard({ candidate, selected, onShowDetail, onChoose }) {
       )}
 
       <div className={`overflow-hidden bg-card-dark ${isPair ? 'aspect-square' : 'aspect-[3/4]'}`}>
-        <img
+        <CandidatePhoto
           src={candidate.photo}
           alt={`Foto ${candidate.name}`}
-          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
         />
       </div>
@@ -414,10 +443,9 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
 
         <div className="flex-1 space-y-6 overflow-y-auto p-6 text-ink">
           <div className="flex items-center gap-4">
-            <img
+            <CandidatePhoto
               src={candidate.photo}
-              alt=""
-              className="h-20 w-20 rounded-xl border border-amber-200 object-cover"
+              className="h-20 w-20 shrink-0 rounded-xl border border-amber-200 object-cover"
             />
             <div>
               <p className="font-bold text-brand">{candidate.role}</p>

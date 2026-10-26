@@ -19,17 +19,89 @@ export const COLORS = {
   textDark: '#1F110B',
 }
 
-export const APP_NAME = 'PERMIRA 2026'
+/** Pengaturan pemilihan bawaan. Super Admin dapat menimpanya lewat `config/election`. */
+export const DEFAULT_ELECTION = { name: 'PEMIRA IKM FIK UI', year: 2026, angkatanCount: 4 }
 
-/** Kategori pemilih per angkatan. `key` dipakai sebagai ID dokumen koleksi `stats`. */
-export const ANGKATAN = [
-  { key: '2026', label: 'Angkatan 2026' },
-  { key: '2025', label: 'Angkatan 2025' },
-  { key: '2024', label: 'Angkatan 2024' },
-  { key: '2023', label: 'Angkatan 2023' },
-  { key: 'Magister', label: 'Magister' },
-  { key: 'Pascasarjana', label: 'Pascasarjana' },
+export const APP_NAME = `${DEFAULT_ELECTION.name} ${DEFAULT_ELECTION.year}`
+
+/** Narahubung resmi pemilihan (Contact Person). Super Admin dapat menimpanya via `config/contacts`. */
+export const DEFAULT_CONTACTS = [
+  {
+    id: 'cp-01',
+    name: 'Helpdesk Teknis & OTP 1',
+    role: 'Kendala OTP & Verifikasi Sistem',
+    phone: '0812-3456-7891',
+    whatsapp: '6281234567891',
+    available: '08.00 - 21.00 WIB',
+    description: 'Bantuan kendala pengiriman kode OTP, verifikasi akun, dan error teknis website.',
+  },
+  {
+    id: 'cp-02',
+    name: 'Helpdesk Teknis & OTP 2',
+    role: 'Kendala Akses & Perangkat',
+    phone: '0812-3456-7892',
+    whatsapp: '6281234567892',
+    available: '08.00 - 21.00 WIB',
+    description: 'Bantuan kendala browser, sesi login berakhir, dan reset status pemilih terhambat.',
+  },
+  {
+    id: 'cp-03',
+    name: 'Divisi DPT & Data Pemilih KPU',
+    role: 'Verifikasi Status DPT & Angkatan',
+    phone: '0812-3456-7893',
+    whatsapp: '6281234567893',
+    available: '08.00 - 20.00 WIB',
+    description: 'Pengecekan NPM tidak terdaftar di DPT, penyesuaian jenjang/angkatan, dan DPT susulan.',
+  },
+  {
+    id: 'cp-04',
+    name: 'Humas & Protokoler KPU',
+    role: 'Informasi Alur & SOP Pemilihan',
+    phone: '0812-3456-7894',
+    whatsapp: '6281234567894',
+    available: '09.00 - 20.00 WIB',
+    description: 'Informasi umum seputar tahapan pemilihan raya, tata tertib, dan pengumuman resmi.',
+  },
+  {
+    id: 'cp-05',
+    name: 'Panitia Pengawas Pemilu (Panwaslu)',
+    role: 'Laporan Pelanggaran & Pengaduan Independen',
+    phone: '0812-3456-7895',
+    whatsapp: '6281234567895',
+    available: '24 Jam Selama Pemilihan',
+    description: 'Saluran pengaduan independen untuk menjaga integritas dan kerahasiaan suara pemilih.',
+  },
 ]
+
+/**
+ * Bangun kategori pemilih per angkatan dari tahun pemilihan.
+ * Format standar:
+ * S1 (4 angkatan), S2 (2 angkatan), S3 (2 angkatan), Profesi, RPL (3 angkatan).
+ * `key` dipakai sebagai ID dokumen koleksi `stats`.
+ */
+export function buildAngkatan(year = DEFAULT_ELECTION.year) {
+  const baseYear = Number(year) || DEFAULT_ELECTION.year
+  const yy = (offset = 0) => String((baseYear - offset) % 100).padStart(2, '0')
+
+  return [
+    { key: `s1-${yy(0)}`, label: `S1 akt ${yy(0)}` },
+    { key: `s1-${yy(1)}`, label: `S1 akt ${yy(1)}` },
+    { key: `s1-${yy(2)}`, label: `S1 akt ${yy(2)}` },
+    { key: `s1-${yy(3)}`, label: `S1 akt ${yy(3)}` },
+    { key: `s2-${yy(0)}`, label: `S2 akt ${yy(0)}` },
+    { key: `s2-${yy(1)}`, label: `S2 akt ${yy(1)}` },
+    { key: `s3-${yy(0)}`, label: `S3 akt ${yy(0)}` },
+    { key: `s3-${yy(1)}`, label: `S3 akt ${yy(1)}` },
+    { key: 'profesi', label: 'Profesi' },
+    { key: `rpl-${yy(0)}`, label: `RPL akt ${yy(0)}` },
+    { key: `rpl-${yy(1)}`, label: `RPL akt ${yy(1)}` },
+    { key: `rpl-${yy(2)}`, label: `RPL akt ${yy(2)}` },
+  ]
+}
+
+/** 12 kategori pemilih bawaan. Gunakan `useElection().angkatan` untuk nilai aktif. */
+export const DEFAULT_ANGKATAN = buildAngkatan(DEFAULT_ELECTION.year)
+export const ANGKATAN = DEFAULT_ANGKATAN
 
 /** Kandidat Anggota Independen (AI) — pilih 1. */
 export const AI_CANDIDATES = [
@@ -160,7 +232,7 @@ export const SOP_TABS = [
   {
     id: 'umum',
     label: 'Ketentuan Umum',
-    description: 'Hak dan kewajiban pemilih dalam PERMIRA 2026.',
+    description: 'Hak dan kewajiban pemilih dalam pemilihan raya mahasiswa.',
     rules: [
       'Hanya mahasiswa yang terdaftar dalam Daftar Pemilih Tetap (DPT) yang berhak memilih.',
       'Setiap pemilih hanya memiliki satu hak suara untuk setiap jenis pemilihan.',

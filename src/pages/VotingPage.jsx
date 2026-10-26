@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { CandidateCard, CandidateModal, Stepper } from '../components/SharedUI'
-import { VOTING_STEPS, getCandidate } from '../data'
+import { useElection } from '../context/electionContext'
 
 /**
  * Halaman bilik suara generik untuk tahap `ai` dan `kabem`.
@@ -9,7 +9,8 @@ import { VOTING_STEPS, getCandidate } from '../data'
  */
 export default function VotingPage({ type, selections, onSelect, onNext, onBack }) {
   const [detail, setDetail] = useState(null)
-  const config = VOTING_STEPS[type]
+  const { votingSteps, getCandidate } = useElection()
+  const config = votingSteps[type]
   const isAi = type === 'ai'
   const selectedId = selections[config.selectionKey]
   const selected = getCandidate(selectedId)
@@ -17,7 +18,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
   return (
     <div className="mx-auto max-w-7xl animate-rise px-4 py-8 pb-32 lg:px-8 lg:py-10">
       <div className="rounded-2xl border border-gold/25 bg-card-dark/70 p-4 sm:p-6">
-        <Stepper step={isAi ? 1 : 2} />
+        <Stepper step={isAi ? 2 : 3} />
       </div>
 
       <header className="mt-8 text-center sm:text-left">
@@ -26,6 +27,12 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
           {config.subtitle}
         </p>
       </header>
+
+      {config.candidates.length === 0 && (
+        <p className="mt-8 rounded-2xl border border-gold/25 bg-card-dark p-6 text-center text-sm text-gold/80">
+          Belum ada kandidat yang terdaftar untuk tahap ini. Hubungi Panitia KPU.
+        </p>
+      )}
 
       <div
         className={`mt-8 grid gap-4 lg:gap-6 ${
@@ -66,7 +73,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-gold/30 px-5 text-sm font-bold text-gold transition-colors hover:bg-gold/10 sm:flex-none"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              {isAi ? 'Kembali' : 'Voting AI'}
+              {isAi ? 'SOP Pemilihan' : 'Pilih AI'}
             </button>
             <button
               type="button"
@@ -75,7 +82,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
               disabled={!selected}
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white shadow-lg shadow-brand/30 transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
             >
-              {isAi ? 'Lanjut ke Voting Kabem' : 'Review & Verifikasi'}
+              {isAi ? 'Lanjut ke Paslon Kabem' : 'Review & Verifikasi'}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>

@@ -1,13 +1,19 @@
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { collection, doc, onSnapshot, writeBatch } from 'firebase/firestore'
+import { collection, doc, getDocs, onSnapshot, writeBatch } from 'firebase/firestore'
 import { auth, db } from '../firebase'
-import { ADMIN_EMAILS, BATCH_CHUNK_SIZE } from '../config'
-import { ANGKATAN } from '../data'
+import { ADMIN_EMAILS, BATCH_CHUNK_SIZE, SUPER_ADMIN_EMAILS } from '../config'
+import { ANGKATAN as DEFAULT_ANGKATAN } from '../data'
 import { downloadCsv, toCsv } from '../utils/csv'
 
-/** Apakah user Firebase adalah Admin KPU yang sah (email/password + terdaftar). */
+const isListedUser = (user, list) =>
+  Boolean(user && !user.isAnonymous && user.email && list.includes(user.email.toLowerCase()))
+
+/** Super Admin (email/password + terdaftar di VITE_SUPER_ADMIN_EMAILS). */
+export const isSuperAdminUser = (user) => isListedUser(user, SUPER_ADMIN_EMAILS)
+
+/** Admin KPU yang sah. Super Admin otomatis juga dianggap Admin KPU. */
 export const isAdminUser = (user) =>
-  Boolean(user && !user.isAnonymous && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase()))
+  isListedUser(user, ADMIN_EMAILS) || isSuperAdminUser(user)
 
 const AUTH_ERRORS = {
   'auth/invalid-credential': 'Email atau kata sandi salah.',
@@ -22,7 +28,7 @@ export async function loginAdmin(email, password) {
   const cleanEmail = String(email ?? '').trim().toLowerCase()
   if (!cleanEmail || !password) throw new Error('Email dan kata sandi wajib diisi.')
 
-  if (!ADMIN_EMAILS.includes(cleanEmail)) {
+  if (!ADMIN_EMAILS.includes(cleanEmail) && !SUPER_ADMIN_EMAILS.includes(cleanEmail)) {
     throw new Error('Akun ini tidak memiliki akses ke Dashboard KPU.')
   }
 
@@ -85,19 +91,32 @@ const chunk = (items, size) => {
 
 /**
  * Hitung ulang & tulis koleksi `stats` (total & sudah memilih per angkatan)
- * dari data DPT. Dipakai setelah impor dan oleh tombol "Sinkronkan Statistik".
+ * dari data DPT. Dokumen statistik angkatan yang sudah tidak dipakai ikut dihapus.
+ * Dipakai setelah impor, reset, dan oleh tombol "Sinkronkan Statistik".
  */
-export async function syncStats(records) {
-  const totals = new Map(ANGKATAN.map((a) => [a.key, { total: 0, voted: 0 }]))
+export async function syncStats(records, angkatanList = DEFAULT_ANGKATAN) {
+  const totals = new Map(angkatanList.map((a) => [a.key, { total: 0, voted: 0 }]))
   for (const record of records) {
-    const entry = totals.get(record.angkatan)
+    let entry = totals.get(record.angkatan)
+    if (!entry && record.angkatan) {
+      const match = angkatanList.find(
+        (a) =>
+          a.label === record.angkatan ||
+          a.label.toLowerCase() === String(record.angkatan).toLowerCase(),
+      )
+      if (match) entry = totals.get(match.key)
+    }
     if (!entry) continue
     entry.total += 1
     if (record.hasVoted) entry.voted += 1
   }
 
+  const existing = await getDocs(collection(db, 'stats'))
   const batch = writeBatch(db)
-  ANGKATAN.forEach((angkatan, order) => {
+  existing.forEach((d) => {
+    if (!totals.has(d.id)) batch.delete(d.ref)
+  })
+  angkatanList.forEach((angkatan, order) => {
     const { total, voted } = totals.get(angkatan.key)
     batch.set(doc(db, 'stats', angkatan.key), { label: angkatan.label, order, total, voted })
   })
@@ -109,7 +128,7 @@ export async function syncStats(records) {
  * Pemilih yang sudah ada hanya diperbarui nama/email/angkatan-nya; status
  * `hasVoted`/`votedAt` TIDAK pernah ditimpa. Pemilih baru dibuat dengan hasVoted=false.
  */
-export async function importDpt(rows, existingRecords, onProgress) {
+export async function importDpt(rows, existingRecords, onProgress, angkatanList = DEFAULT_ANGKATAN) {
   const existing = new Map(existingRecords.map((r) => [r.npm, r]))
   const chunks = chunk(rows, BATCH_CHUNK_SIZE)
   let done = 0
@@ -135,13 +154,15 @@ export async function importDpt(rows, existingRecords, onProgress) {
     const prev = merged.get(row.npm)
     merged.set(row.npm, { ...row, hasVoted: prev?.hasVoted === true, votedAt: prev?.votedAt ?? null })
   }
-  await syncStats([...merged.values()])
+  await syncStats([...merged.values()], angkatanList)
 }
 
 const todayStamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '')
+const slugify = (text) =>
+  String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
 /** Unduh laporan kehadiran (tanpa data pilihan suara). */
-export function downloadAttendanceReport(records) {
+export function downloadAttendanceReport(records, appName = 'PERMIRA 2026') {
   const rows = [...records]
     .sort((a, b) => a.npm.localeCompare(b.npm))
     .map((r) => [
@@ -153,18 +174,21 @@ export function downloadAttendanceReport(records) {
       r.votedAt ? r.votedAt.toLocaleString('id-ID') : '',
     ])
   const csv = toCsv(['NPM', 'Nama', 'Email', 'Angkatan', 'Status', 'Waktu Memilih'], rows)
-  downloadCsv(`laporan-kehadiran-permira-2026-${todayStamp()}.csv`, csv)
+  downloadCsv(`laporan-kehadiran-${slugify(appName)}-${todayStamp()}.csv`, csv)
 }
 
-/** Unduh templat CSV DPT. */
-export function downloadDptTemplate() {
+/** Unduh templat CSV DPT (contoh angkatan mengikuti daftar angkatan aktif). */
+export function downloadDptTemplate(angkatanList = DEFAULT_ANGKATAN, appName = 'PERMIRA 2026') {
+  const [first, second] = angkatanList
+  const yy = (key) => String(key).slice(-2)
   const csv = toCsv(
     ['npm', 'nama', 'email', 'angkatan'],
     [
-      ['2602010001', 'Contoh Mahasiswa Satu', 'contoh1@kampus.ac.id', '2026'],
-      ['2501020002', 'Contoh Mahasiswa Dua', 'contoh2@kampus.ac.id', '2025'],
+      [`${yy(first.key)}02010001`, 'Contoh Mahasiswa Satu', 'contoh1@kampus.ac.id', first.key],
+      [`${yy(second.key)}01020002`, 'Contoh Mahasiswa Dua', 'contoh2@kampus.ac.id', second.key],
       ['2303030003', 'Contoh Mahasiswa Magister', 'contoh3@kampus.ac.id', 'Magister'],
     ],
   )
-  downloadCsv('template-dpt-permira-2026.csv', csv)
+  downloadCsv(`template-dpt-${slugify(appName)}.csv`, csv)
 }
+

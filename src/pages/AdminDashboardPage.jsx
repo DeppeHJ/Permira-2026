@@ -20,6 +20,7 @@ import {
   LogOut,
   RefreshCw,
   Search,
+  ShieldAlert,
   Upload,
   UserCheck,
   Users,
@@ -28,7 +29,7 @@ import {
 } from 'lucide-react'
 import { BrandLogo, Spinner } from '../components/SharedUI'
 import { CSV_MAX_BYTES } from '../config'
-import { AI_CANDIDATES, ANGKATAN, KABEM_CANDIDATES } from '../data'
+import { useElection } from '../context/electionContext'
 import {
   downloadAttendanceReport,
   downloadDptTemplate,
@@ -42,6 +43,24 @@ import { parseDptCsv } from '../utils/dpt'
 import { formatDateTime, percent } from '../utils/format'
 
 const CHART_COLORS = ['#BA3D03', '#E48523', '#E8C580']
+const CATEGORY_COLORS = [
+  '#0284C7',
+  '#EA580C',
+  '#059669',
+  '#7C3AED',
+  '#E11D48',
+  '#D97706',
+  '#0891B2',
+  '#DB2777',
+  '#65A30D',
+  '#4F46E5',
+  '#F59E0B',
+  '#0D9488',
+  '#C026D3',
+  '#2563EB',
+  '#CA8A04',
+  '#16A34A',
+]
 const PAGE_SIZE = 10
 
 const tooltipStyle = {
@@ -75,7 +94,8 @@ function KpiCard({ icon: Icon, label, value, hint, tone = 'dark' }) {
   )
 }
 
-export default function AdminDashboardPage({ user, onLogout, showToast }) {
+export default function AdminDashboardPage({ user, onLogout, showToast, isSuper = false }) {
+  const { angkatan, aiCandidates, kabemCandidates, appName } = useElection()
   const [records, setRecords] = useState([])
   const [dptReady, setDptReady] = useState(false)
   const [ballots, setBallots] = useState([])
@@ -91,6 +111,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
 
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
+  const [aiChartType, setAiChartType] = useState('pie')
 
   useEffect(() => {
     const onError = (error) =>
@@ -121,21 +142,27 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
 
   const perAngkatan = useMemo(
     () =>
-      ANGKATAN.map((a) => {
-        const group = records.filter((r) => r.angkatan === a.key)
+      angkatan.map((a) => {
+        const group = records.filter(
+          (r) =>
+            r.angkatan === a.key ||
+            r.angkatan === a.label ||
+            String(r.angkatan).toLowerCase() === a.label.toLowerCase() ||
+            String(r.angkatan).toLowerCase() === a.key.toLowerCase(),
+        )
         const voted = group.filter((r) => r.hasVoted).length
         return { ...a, total: group.length, voted, pct: percent(voted, group.length) }
       }),
-    [records],
+    [records, angkatan],
   )
 
   const tally = useMemo(() => tallyVotes(ballots), [ballots])
-  const kabemData = KABEM_CANDIDATES.map((c) => ({
+  const kabemData = kabemCandidates.map((c) => ({
     name: `Paslon ${c.number}`,
     detail: c.name,
     value: tally.kabem[c.id] || 0,
   }))
-  const aiData = AI_CANDIDATES.map((c) => ({
+  const aiData = aiCandidates.map((c) => ({
     name: `${c.number} ${c.name.split(' ')[0]}`,
     detail: c.name,
     suara: tally.ai[c.id] || 0,
@@ -169,9 +196,9 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
         return
       }
       const text = await file.text()
-      setPreview({ name: file.name, ...parseDptCsv(text) })
+      setPreview({ name: file.name, ...parseDptCsv(text, angkatan) })
     },
-    [showToast],
+    [showToast, angkatan],
   )
 
   const existingNpm = useMemo(() => new Set(records.map((r) => r.npm)), [records])
@@ -183,7 +210,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
     setImporting(true)
     setProgress({ done: 0, total: preview.valid.length })
     try {
-      await importDpt(preview.valid, records, (done, total) => setProgress({ done, total }))
+      await importDpt(preview.valid, records, (done, total) => setProgress({ done, total }), angkatan)
       showToast({
         type: 'success',
         title: 'Impor DPT berhasil',
@@ -207,7 +234,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
   const handleSync = async () => {
     setSyncing(true)
     try {
-      await syncStats(records)
+      await syncStats(records, angkatan)
       showToast({ type: 'success', title: 'Statistik disinkronkan', message: 'Data publik per angkatan telah diperbarui.' })
     } catch {
       showToast({ type: 'error', title: 'Sinkronisasi gagal', message: 'Coba lagi beberapa saat.' })
@@ -226,6 +253,16 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
               <p className="text-xs text-gold/60">Masuk sebagai</p>
               <p className="text-sm font-semibold text-gold">{user.email}</p>
             </div>
+            {isSuper && (
+              <a
+                href="#/superadmin"
+                id="link-super-admin"
+                className="flex h-11 items-center gap-2 rounded-xl bg-gold px-4 text-sm font-bold text-card-dark transition-colors hover:bg-white"
+              >
+                <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Panel Super Admin</span>
+              </a>
+            )}
             <button
               type="button"
               id="btn-admin-logout"
@@ -243,7 +280,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
           <div>
             <h1 className="text-3xl font-extrabold text-gold sm:text-4xl">Rekapitulasi Real-Time</h1>
             <p className="mt-1 text-sm text-gold/70">
-              Perolehan suara dan kehadiran pemilih PERMIRA 2026 diperbarui otomatis.
+              Perolehan suara dan kehadiran pemilih {appName} diperbarui otomatis.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -259,7 +296,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
             <button
               type="button"
               id="btn-download-report"
-              onClick={() => downloadAttendanceReport(records)}
+              onClick={() => downloadAttendanceReport(records, appName)}
               disabled={!dptReady || records.length === 0}
               className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white shadow-lg shadow-brand/30 transition-colors hover:bg-brand-hover disabled:opacity-50"
             >
@@ -326,25 +363,71 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
           </div>
 
           <div className="rounded-2xl border border-gold/25 bg-card-dark p-6">
-            <h2 className="text-lg font-bold text-gold">Perolehan Suara Anggota Independen</h2>
-            <p className="text-xs text-gold/60">{votesReady ? `${tally.total} suara masuk` : 'Memuat…'}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gold">Perolehan Suara Anggota Independen</h2>
+                <p className="text-xs text-gold/60">{votesReady ? `${tally.total} suara masuk` : 'Memuat…'}</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border border-gold/20 bg-bean/60 p-0.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setAiChartType('pie')}
+                  className={`rounded px-2.5 py-0.5 font-bold transition-all ${
+                    aiChartType === 'pie' ? 'bg-brand text-white shadow-sm' : 'text-gold/70 hover:text-gold'
+                  }`}
+                >
+                  Pie
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiChartType('bar')}
+                  className={`rounded px-2.5 py-0.5 font-bold transition-all ${
+                    aiChartType === 'bar' ? 'bg-brand text-white shadow-sm' : 'text-gold/70 hover:text-gold'
+                  }`}
+                >
+                  Bar
+                </button>
+              </div>
+            </div>
+
             <div className="mt-4 h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={aiData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(232,197,128,0.15)" />
-                  <XAxis dataKey="name" stroke="#E8C580" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} stroke="#E8C580" tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    cursor={{ fill: 'rgba(232,197,128,0.08)' }}
-                    itemStyle={{ color: '#E8C580' }}
-                  />
-                  <Bar dataKey="suara" name="Suara" radius={[8, 8, 0, 0]}>
-                    {aiData.map((entry, index) => (
-                      <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
+                {aiChartType === 'pie' ? (
+                  <PieChart>
+                    <Pie
+                      data={aiData}
+                      dataKey="suara"
+                      nameKey="name"
+                      innerRadius="55%"
+                      outerRadius="85%"
+                      paddingAngle={tally.total > 0 ? 3 : 0}
+                      stroke="#2A0B02"
+                      label={({ value }) => (value > 0 ? value : '')}
+                    >
+                      {aiData.map((entry, index) => (
+                        <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#E8C580' }} />
+                    <Legend wrapperStyle={{ color: '#E8C580' }} />
+                  </PieChart>
+                ) : (
+                  <BarChart data={aiData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(232,197,128,0.15)" />
+                    <XAxis dataKey="name" stroke="#E8C580" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} stroke="#E8C580" tick={{ fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ fill: 'rgba(232,197,128,0.08)' }}
+                      itemStyle={{ color: '#E8C580' }}
+                    />
+                    <Bar dataKey="suara" name="Suara" radius={[8, 8, 0, 0]}>
+                      {aiData.map((entry, index) => (
+                        <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </div>
             <ul className="mt-2 space-y-1 text-xs text-gold/70">
@@ -360,25 +443,43 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
 
         {/* Kehadiran per angkatan + Unggah DPT */}
         <section className="grid gap-6 lg:grid-cols-5">
-          <div className="rounded-2xl border border-gold/25 bg-card-dark p-6 lg:col-span-2">
-            <h2 className="text-lg font-bold text-gold">Kehadiran per Angkatan</h2>
-            <ul className="mt-4 space-y-4">
-              {perAngkatan.map((a) => (
-                <li key={a.key}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-white">{a.label}</span>
-                    <span className="text-gold/80">
-                      {a.voted}/{a.total} · <strong className="text-gold">{a.pct}%</strong>
-                    </span>
-                  </div>
-                  <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-gold/15">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-brand to-accent transition-all duration-700"
-                      style={{ width: `${a.pct}%` }}
+          <div className="flex flex-col rounded-2xl border border-gold/25 bg-card-dark p-6 lg:col-span-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gold">Kehadiran per Angkatan</h2>
+                <p className="text-xs text-gold/60">{perAngkatan.length} kategori pemilih</p>
+              </div>
+            </div>
+            <ul className="mt-3.5 space-y-1.5">
+              {perAngkatan.map((a, index) => {
+                const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+                return (
+                  <li
+                    key={a.key}
+                    className="group flex items-center gap-2.5 rounded-lg border border-gold/10 bg-bean/30 px-2.5 py-1.5 transition-all hover:border-gold/30 hover:bg-bean/60"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full shadow-sm"
+                      style={{ backgroundColor: color }}
                     />
-                  </div>
-                </li>
-              ))}
+                    <span className="w-20 shrink-0 truncate text-xs font-bold text-white transition-colors group-hover:text-gold">
+                      {a.label}
+                    </span>
+                    <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-gold/15">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${a.pct}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <div className="shrink-0 text-right text-xs">
+                      <strong className="font-bold text-gold">{a.pct}%</strong>
+                      <span className="ml-1 text-[10px] text-gold/60 font-mono">
+                        ({a.voted}/{a.total})
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
@@ -387,7 +488,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast }) {
               <h2 className="text-lg font-bold text-gold">Impor DPT Massal (.csv)</h2>
               <button
                 type="button"
-                onClick={downloadDptTemplate}
+                onClick={() => downloadDptTemplate(angkatan, appName)}
                 className="flex items-center gap-2 text-sm font-semibold text-gold underline-offset-4 hover:underline"
               >
                 <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Unduh templat

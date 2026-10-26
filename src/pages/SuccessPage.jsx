@@ -1,5 +1,6 @@
 import { CheckCheck, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
 import { BrandLogo } from '../components/SharedUI'
+import { useElection } from '../context/electionContext'
 
 const CONFETTI_COLORS = ['#E8C580', '#E48523', '#FFFFFF', '#BA3D03']
 
@@ -16,6 +17,7 @@ const CONFETTI = Array.from({ length: 64 }, (_, i) => ({
 }))
 
 export default function SuccessPage({ voter, onNavigate, onLogout }) {
+  const { appName } = useElection()
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#E48523_0%,#BA3D03_30%,#3D1203_75%)] px-4 py-10 text-center">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -51,7 +53,7 @@ export default function SuccessPage({ voter, onNavigate, onLogout }) {
           Suara Anda telah berhasil direkam, {voter?.nama ? voter.nama.split(' ')[0] : 'Mahasiswa'}.
         </p>
         <p className="mt-2 max-w-md animate-rise text-sm font-medium text-white/85">
-          Terima kasih telah berpartisipasi dalam PERMIRA 2026. Pilihan Anda tersimpan secara rahasia
+          Terima kasih telah berpartisipasi dalam {appName}. Pilihan Anda tersimpan secara rahasia
           dan tidak dapat dikaitkan dengan identitas Anda.
         </p>
 

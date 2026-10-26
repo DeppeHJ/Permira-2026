@@ -3,15 +3,18 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { TriangleAlert } from 'lucide-react'
 import { auth, isFirebaseConfigured } from './firebase'
 import { Spinner, ToastNotification, TopNav } from './components/SharedUI'
+import { useElection } from './context/electionContext'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminLoginPage from './pages/AdminLoginPage'
+import ContactPage from './pages/ContactPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import ReviewOtpPage from './pages/ReviewOtpPage'
 import SopPage from './pages/SopPage'
 import SuccessPage from './pages/SuccessPage'
+import SuperAdminPage from './pages/superadmin/SuperAdminPage'
 import VotingPage from './pages/VotingPage'
-import { isAdminUser, loginAdmin, logoutAdmin } from './services/adminService'
+import { isAdminUser, isSuperAdminUser, loginAdmin, logoutAdmin } from './services/adminService'
 import { sendOtp, verifyOtp } from './services/otpService'
 import {
   castVote,
@@ -25,19 +28,23 @@ const SESSION_KEY = 'permira_voter_session'
 
 const HASH_TO_PAGE = {
   '#/dashboard': 'dashboard',
+  '#/voting': 'voting',
   '#/vote-ai': 'voteAI',
   '#/vote-kabem': 'voteKabem',
   '#/review': 'review',
   '#/sop': 'sop',
+  '#/contact': 'contact',
   '#/success': 'success',
 }
 
 const PAGE_TO_HASH = {
   dashboard: '#/dashboard',
+  voting: '#/voting',
   voteAI: '#/vote-ai',
   voteKabem: '#/vote-kabem',
   review: '#/review',
   sop: '#/sop',
+  contact: '#/contact',
   success: '#/success',
 }
 
@@ -49,7 +56,11 @@ const readSession = () => {
   }
 }
 
-const getRoute = () => (window.location.hash.startsWith('#/kpu') ? 'admin' : 'voter')
+const getRoute = () => {
+  const hash = window.location.hash
+  if (hash.startsWith('#/superadmin')) return 'super'
+  return hash.startsWith('#/kpu') ? 'admin' : 'voter'
+}
 
 const getInitialPage = () => {
   const hash = window.location.hash
@@ -74,12 +85,14 @@ function ConfigMissing() {
 }
 
 export default function App() {
+  const { ready: electionReady, appName } = useElection()
   const [route, setRoute] = useState(getRoute)
   const [authReady, setAuthReady] = useState(false)
   const [authUser, setAuthUser] = useState(null)
 
   const [voter, setVoter] = useState(() => readSession().voter || null)
   const [selections, setSelections] = useState(() => readSession().selections || {})
+  const [sopAgreed, setSopAgreed] = useState(() => Boolean(readSession().sopAgreed))
   const [page, setPage] = useState(getInitialPage)
 
   const [stats, setStats] = useState({})
@@ -110,6 +123,7 @@ export default function App() {
   // Sesi pemilih hanya valid selama user anonim Firebase masih aktif.
   const activeVoter = authReady && authUser?.isAnonymous ? voter : null
   const adminUser = authReady && isAdminUser(authUser) ? authUser : null
+  const superUser = authReady && isSuperAdminUser(authUser) ? authUser : null
 
   // Routing hash dua arah: merespons tombol browser Back/Forward & portal admin #/kpu.
   useEffect(() => {
@@ -125,10 +139,10 @@ export default function App() {
           return
         }
 
-        const mappedPage = HASH_TO_PAGE[hash] || 'dashboard'
+        let mappedPage = HASH_TO_PAGE[hash] || 'dashboard'
 
         // Proteksi pemilih yang sudah menggunakan hak suara
-        if (activeVoter.hasVoted && ['voteAI', 'voteKabem', 'review'].includes(mappedPage)) {
+        if (activeVoter.hasVoted && ['voting', 'voteAI', 'voteKabem', 'review'].includes(mappedPage)) {
           window.location.hash = '#/dashboard'
           setPage('dashboard')
           showToast({
@@ -136,6 +150,27 @@ export default function App() {
             title: 'Hak Suara Sudah Digunakan',
             message: 'Anda sudah menggunakan hak suara dan hanya dapat melihat dashboard statistik.',
           })
+          return
+        }
+
+        // Alur voting: pemilih wajib membaca dan menyetujui SOP terlebih dahulu
+        if (!sopAgreed && ['voting', 'voteAI', 'voteKabem', 'review'].includes(mappedPage)) {
+          window.location.hash = '#/sop'
+          setPage('sop')
+          showToast({
+            type: 'info',
+            title: 'Wajib Baca SOP Terlebih Dahulu',
+            message: 'Silakan baca dan setujui SOP Pemilihan sebelum melanjutkan ke bilik suara.',
+          })
+          return
+        }
+
+        if (mappedPage === 'voting') {
+          const targetVotingPage = selections.aiId
+            ? (selections.kabemId ? 'review' : 'voteKabem')
+            : 'voteAI'
+          window.location.hash = PAGE_TO_HASH[targetVotingPage] || '#/vote-ai'
+          setPage(targetVotingPage)
           return
         }
 
@@ -154,22 +189,27 @@ export default function App() {
 
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
-  }, [activeVoter, selections, showToast])
+  }, [activeVoter, selections, sopAgreed, showToast])
 
-  // Simpan sesi (hanya identitas dasar & pilihan sementara) agar refresh tidak keluar.
+  // Simpan sesi (hanya identitas dasar, pilihan sementara, dan konfirmasi SOP).
   useEffect(() => {
     if (voter) {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ voter, selections }))
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ voter, selections, sopAgreed }))
     } else {
       sessionStorage.removeItem(SESSION_KEY)
     }
-  }, [voter, selections])
+  }, [voter, selections, sopAgreed])
 
   const resetVoterState = useCallback(() => {
     setVoter(null)
     setSelections({})
+    setSopAgreed(false)
     setPage('dashboard')
     restoredRef.current = false
+  }, [])
+
+  const handleAgreeSop = useCallback(() => {
+    setSopAgreed(true)
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -195,7 +235,7 @@ export default function App() {
           setVoter((prev) => (prev ? { ...prev, hasVoted } : prev))
           if (hasVoted) {
             setPage((prev) => {
-              if (['voteAI', 'voteKabem', 'review'].includes(prev)) {
+              if (['voting', 'voteAI', 'voteKabem', 'review'].includes(prev)) {
                 window.location.hash = '#/dashboard'
                 return 'dashboard'
               }
@@ -224,13 +264,23 @@ export default function App() {
   const navigate = useCallback(
     (target) => {
       let resolvedTarget = target
-      if (activeVoter?.hasVoted && ['voteAI', 'voteKabem', 'review'].includes(resolvedTarget)) {
+
+      if (activeVoter?.hasVoted && ['voting', 'voteAI', 'voteKabem', 'review'].includes(resolvedTarget)) {
         showToast({
           type: 'info',
           title: 'Hak Suara Sudah Digunakan',
           message: 'Anda sudah menggunakan hak suara dan hanya dapat melihat dashboard statistik.',
         })
         resolvedTarget = 'dashboard'
+      } else if (!sopAgreed && ['voting', 'voteAI', 'voteKabem', 'review'].includes(resolvedTarget)) {
+        showToast({
+          type: 'info',
+          title: 'Wajib Baca SOP Terlebih Dahulu',
+          message: 'Silakan baca dan setujui SOP Pemilihan sebelum melanjutkan ke bilik suara.',
+        })
+        resolvedTarget = 'sop'
+      } else if (resolvedTarget === 'voting') {
+        resolvedTarget = selections.aiId ? (selections.kabemId ? 'review' : 'voteKabem') : 'voteAI'
       } else if (resolvedTarget === 'review' && !(selections.aiId && selections.kabemId)) {
         showToast({
           type: 'error',
@@ -247,7 +297,7 @@ export default function App() {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
-    [activeVoter, selections, showToast],
+    [activeVoter, selections, sopAgreed, showToast],
   )
 
   const handleSelect = (key, id) => setSelections((prev) => ({ ...prev, [key]: id }))
@@ -328,20 +378,37 @@ export default function App() {
   /* -------------------------------- Render ------------------------------- */
   if (!isFirebaseConfigured) return <ConfigMissing />
 
-  if (!authReady) {
+  if (!authReady || !electionReady) {
     return (
       <main className="grid min-h-screen place-items-center bg-bean text-gold">
         <div className="flex items-center gap-3 font-semibold">
-          <Spinner className="h-6 w-6" /> Memuat PERMIRA 2026…
+          <Spinner className="h-6 w-6" /> Memuat {appName}…
         </div>
       </main>
     )
   }
 
   let content
-  if (route === 'admin') {
+  if (route === 'super') {
+    content = superUser ? (
+      <SuperAdminPage user={superUser} onLogout={logoutAdmin} showToast={showToast} />
+    ) : (
+      <AdminLoginPage
+        variant="super"
+        onLogin={handleAdminLogin}
+        loading={adminLoading}
+        error={adminUser ? 'Akun ini bukan Super Admin. Masuk dengan akun Super Admin.' : adminError}
+        onBack={goVoter}
+      />
+    )
+  } else if (route === 'admin') {
     content = adminUser ? (
-      <AdminDashboardPage user={adminUser} onLogout={logoutAdmin} showToast={showToast} />
+      <AdminDashboardPage
+        user={adminUser}
+        onLogout={logoutAdmin}
+        showToast={showToast}
+        isSuper={Boolean(superUser)}
+      />
     ) : (
       <AdminLoginPage
         onLogin={handleAdminLogin}
@@ -351,20 +418,44 @@ export default function App() {
       />
     )
   } else if (!activeVoter) {
-    content = (
-      <LoginPage
-        onLogin={handleVoterLogin}
-        loading={loginLoading}
-        error={loginError}
-        onGoAdmin={goAdmin}
-      />
-    )
+    if (page === 'contact') {
+      content = (
+        <div className="min-h-screen bg-bean pb-12">
+          <ContactPage onBack={() => navigate('dashboard')} onNavigate={navigate} />
+        </div>
+      )
+    } else if (page === 'sop') {
+      content = (
+        <div className="min-h-screen bg-bean pb-12">
+          <SopPage onNavigate={navigate} onBack={() => navigate('dashboard')} />
+        </div>
+      )
+    } else {
+      content = (
+        <LoginPage
+          onLogin={handleVoterLogin}
+          loading={loginLoading}
+          error={loginError}
+          onGoAdmin={goAdmin}
+          onNavigate={navigate}
+        />
+      )
+    }
   } else if (page === 'success') {
     content = <SuccessPage voter={activeVoter} onNavigate={navigate} onLogout={handleLogout} />
   } else {
     let screen
-    if (page === 'sop') {
-      screen = <SopPage onNavigate={navigate} />
+    if (page === 'contact') {
+      screen = <ContactPage onNavigate={navigate} onBack={() => navigate('dashboard')} />
+    } else if (page === 'sop') {
+      screen = (
+        <SopPage
+          onNavigate={navigate}
+          voter={activeVoter}
+          sopAgreed={sopAgreed}
+          onAgreeSop={handleAgreeSop}
+        />
+      )
     } else if (page === 'voteAI') {
       screen = (
         <VotingPage
@@ -372,7 +463,7 @@ export default function App() {
           selections={selections}
           onSelect={handleSelect}
           onNext={() => navigate('voteKabem')}
-          onBack={() => navigate('dashboard')}
+          onBack={() => navigate('sop')}
         />
       )
     } else if (page === 'voteKabem') {

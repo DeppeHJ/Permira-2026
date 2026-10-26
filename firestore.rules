@@ -17,7 +17,7 @@ service cloud.firestore {
 
     // Admin KPU = login Email/Password dengan salah satu dari 3 email resmi.
     // WAJIB sama dengan VITE_ADMIN_EMAILS dan akun yang dibuat di Firebase Auth.
-    function isAdmin() {
+    function isKpuAdmin() {
       return isSignedIn()
         && request.auth.token.firebase.sign_in_provider == 'password'
         && request.auth.token.email.lower() in [
@@ -27,12 +27,34 @@ service cloud.firestore {
         ];
     }
 
-    // ID kandidat harus sama dengan src/data.js.
+    // Super Admin = login Email/Password dengan email di bawah ini.
+    // WAJIB sama dengan VITE_SUPER_ADMIN_EMAILS dan akun yang dibuat di Firebase Auth.
+    function isSuperAdmin() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email.lower() in [
+          'superadmin@kpu.ac.id'
+        ];
+    }
+
+    // Super Admin otomatis memiliki seluruh hak Admin KPU.
+    function isAdmin() {
+      return isKpuAdmin() || isSuperAdmin();
+    }
+
+    // ID kandidat: menerima kandidat bawaan (ai-01..ai-03, bem-01..bem-02)
+    // ATAU kandidat dinamis yang dibuat Super Admin di koleksi `candidates`.
+    function candidateOfType(id, type) {
+      return exists(/databases/$(database)/documents/candidates/$(id))
+        && get(/databases/$(database)/documents/candidates/$(id)).data.type == type;
+    }
     function validAiId(id) {
-      return id in ['ai-01', 'ai-02', 'ai-03'];
+      return id in ['ai-01', 'ai-02', 'ai-03']
+        || candidateOfType(id, 'ai');
     }
     function validKabemId(id) {
-      return id in ['bem-01', 'bem-02'];
+      return id in ['bem-01', 'bem-02']
+        || candidateOfType(id, 'kabem');
     }
 
     // ------------------------------------------------------------------
@@ -48,7 +70,7 @@ service cloud.firestore {
       allow create: if isAdmin()
         && request.resource.data.keys().hasAll(['npm', 'nama', 'email', 'angkatan', 'hasVoted', 'votedAt'])
         && request.resource.data.npm == npm
-        && request.resource.data.hasVoted == false
+        && (request.resource.data.hasVoted == false || request.resource.data.hasVoted == null)
         && request.resource.data.votedAt == null;
 
       allow update: if
@@ -57,15 +79,16 @@ service cloud.firestore {
           && request.resource.data.hasVoted == resource.data.hasVoted
           && request.resource.data.votedAt == resource.data.votedAt)
         ||
-        // Pemilih: satu arah false -> true, hanya field hasVoted & votedAt, waktu dari server.
+        // Pemilih: satu arah false/null/'false' -> true, hanya field hasVoted & votedAt, waktu dari server.
         (isVoter()
-          && resource.data.hasVoted == false
+          && (resource.data.hasVoted == false || resource.data.hasVoted == null || resource.data.hasVoted == 'false')
           && request.resource.data.hasVoted == true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted', 'votedAt'])
           && request.resource.data.votedAt == request.time);
 
-      // Hanya pemilih yang belum memilih yang boleh dihapus dari DPT.
-      allow delete: if isAdmin() && resource.data.hasVoted == false;
+      // Admin KPU hanya boleh menghapus pemilih yang belum memilih.
+      // Super Admin boleh menghapus semuanya (reset DPT untuk periode baru).
+      allow delete: if isSuperAdmin() || (isAdmin() && resource.data.hasVoted == false);
     }
 
     // ------------------------------------------------------------------
@@ -82,8 +105,10 @@ service cloud.firestore {
         && validAiId(request.resource.data.aiId)
         && validKabemId(request.resource.data.kabemId);
 
-      // Surat suara tidak dapat diubah atau dihapus oleh siapa pun.
-      allow update, delete: if false;
+      // Surat suara tidak dapat diubah. Hanya Super Admin yang boleh mengosongkan
+      // kotak suara (reset untuk periode baru).
+      allow update: if false;
+      allow delete: if isSuperAdmin();
     }
 
     // ------------------------------------------------------------------
@@ -99,8 +124,24 @@ service cloud.firestore {
         // Pemilih hanya boleh menambah `voted` sebanyak tepat 1 (dalam transaksi pemungutan suara).
         (isVoter()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voted'])
-          && request.resource.data.voted == resource.data.voted + 1
-          && request.resource.data.voted <= resource.data.total);
+          && request.resource.data.voted == (('voted' in resource.data && resource.data.voted != null) ? resource.data.voted + 1 : 1));
+    }
+
+    // ------------------------------------------------------------------
+    // config/{docId} — pengaturan pemilihan: election, timeline, sop
+    // Dibaca publik (halaman login memerlukan nama/tahun), ditulis Super Admin.
+    // ------------------------------------------------------------------
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // ------------------------------------------------------------------
+    // candidates/{id} — data kandidat AI & paslon Kabem
+    // ------------------------------------------------------------------
+    match /candidates/{candidateId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
     }
 
     // Semua koleksi lain ditolak.

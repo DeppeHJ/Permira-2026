@@ -20,6 +20,16 @@ export const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean)
 
+/**
+ * Daftar email Super Admin (huruf kecil). Super Admin juga otomatis boleh membuka
+ * Dashboard KPU, dan satu-satunya yang boleh mengubah tahun, timeline, SOP, kandidat,
+ * serta mereset data pemilihan. WAJIB sama dengan daftar di firestore.rules.
+ */
+export const SUPER_ADMIN_EMAILS = (import.meta.env.VITE_SUPER_ADMIN_EMAILS || '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean)
+
 /** Masa berlaku kode OTP (detik) — harus sama dengan OTP_TTL_SECONDS di Code.gs. */
 export const OTP_TTL_SECONDS = 90
 

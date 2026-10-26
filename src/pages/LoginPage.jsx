@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { AlertCircle, ArrowRight, IdCard, LockKeyhole, UserRound } from 'lucide-react'
 import { BrandLogo, Spinner } from '../components/SharedUI'
+import { useElection } from '../context/electionContext'
 
-export default function LoginPage({ onLogin, loading, error, onGoAdmin }) {
+export default function LoginPage({ onLogin, loading, error, onGoAdmin, onNavigate }) {
+  const { appName } = useElection()
   const [identity, setIdentity] = useState('')
   const [npm, setNpm] = useState('')
 
@@ -27,7 +29,7 @@ export default function LoginPage({ onLogin, loading, error, onGoAdmin }) {
       />
 
       <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-2">
-        <section className="hidden animate-rise lg:block" aria-label="Tentang PERMIRA 2026">
+        <section className="hidden animate-rise lg:block" aria-label={`Tentang ${appName}`}>
           <BrandLogo size="lg" subtitle="Pemilihan Raya Mahasiswa" />
           <h1 className="mt-8 text-5xl font-extrabold leading-tight text-gold">
             Suara Anda,
@@ -139,8 +141,24 @@ export default function LoginPage({ onLogin, loading, error, onGoAdmin }) {
             </button>
           </form>
 
-          <div className="mt-6 flex items-center justify-between border-t border-gold/12 pt-4 text-xs text-gold/60">
-            <span>Data Anda dilindungi &amp; dirahasiakan.</span>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-gold/12 pt-4 text-xs text-gold/60">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onNavigate?.('sop')}
+                className="font-semibold text-gold/80 transition-colors hover:text-gold hover:underline"
+              >
+                SOP Pemilihan
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => onNavigate?.('contact')}
+                className="font-semibold text-gold/80 transition-colors hover:text-gold hover:underline"
+              >
+                Narahubung (CP)
+              </button>
+            </div>
             <button
               type="button"
               onClick={onGoAdmin}

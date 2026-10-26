@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Lock, Mail, Pencil, ShieldCheck, Timer } from 'lucide-react'
-import { Spinner, Stepper } from '../components/SharedUI'
+import { ArrowLeft, Headphones, Lock, Mail, Pencil, ShieldCheck, Timer } from 'lucide-react'
+import { CandidatePhoto, Spinner, Stepper } from '../components/SharedUI'
 import { OTP_RESEND_SECONDS, OTP_TTL_SECONDS } from '../config'
-import { getCandidate } from '../data'
+import { useElection } from '../context/electionContext'
 import { formatCountdown, maskEmail } from '../utils/format'
 
 const OTP_LENGTH = 6
@@ -12,9 +12,8 @@ function SummaryRow({ label, candidate, onEdit }) {
   if (!candidate) return null
   return (
     <div className="flex items-center gap-4 rounded-xl border border-amber-200/70 bg-amber-50/60 p-4">
-      <img
+      <CandidatePhoto
         src={candidate.photo}
-        alt=""
         className="h-16 w-16 shrink-0 rounded-xl border border-amber-200 object-cover"
       />
       <div className="min-w-0 flex-1">
@@ -34,6 +33,7 @@ function SummaryRow({ label, candidate, onEdit }) {
 }
 
 export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSendOtp, onSubmit }) {
+  const { getCandidate } = useElection()
   const [digits, setDigits] = useState(EMPTY_DIGITS)
   const [otpSent, setOtpSent] = useState(false)
   const [expiresAt, setExpiresAt] = useState(0)
@@ -148,7 +148,7 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
   return (
     <div className="mx-auto max-w-7xl animate-rise px-4 py-8 lg:px-8 lg:py-10">
       <div className="rounded-2xl border border-gold/25 bg-card-dark/70 p-4 sm:p-6">
-        <Stepper step={3} />
+        <Stepper step={4} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -311,6 +311,22 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
             <p className="font-extrabold">Pemilih</p>
             <p className="mt-1 text-sm font-semibold">{voter.nama}</p>
             <p className="font-mono text-xs">{voter.npm}</p>
+          </div>
+          <div className="rounded-2xl border border-gold/25 bg-card-dark p-4 text-xs">
+            <h3 className="flex items-center gap-1.5 font-bold text-gold">
+              <Headphones className="h-4 w-4 text-accent" aria-hidden="true" />
+              Kendala Menerima OTP?
+            </h3>
+            <p className="mt-1.5 text-gold/80 leading-relaxed">
+              Jika kode OTP tidak masuk ke folder Utama maupun Spam, hubungi narahubung panitia KPU.
+            </p>
+            <button
+              type="button"
+              onClick={() => onEdit?.('contact')}
+              className="mt-2.5 font-bold text-accent transition-colors hover:text-gold hover:underline"
+            >
+              Lihat 5 Kontak Narahubung &rarr;
+            </button>
           </div>
         </aside>
       </div>
