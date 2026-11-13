@@ -164,7 +164,7 @@ export default function ContactsPanel({ showToast }) {
               type="button"
               onClick={() => setResetDialogOpen(true)}
               className={btnGhost}
-              title="Kembalikan ke 5 kontak bawaan resmi KPU"
+              title="Kembalikan ke 5 kontak bawaan resmi Panitia"
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Reset 5 Kontak Bawaan</span>

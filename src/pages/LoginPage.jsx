@@ -164,7 +164,7 @@ export default function LoginPage({ onLogin, loading, error, onGoAdmin, onNaviga
               onClick={onGoAdmin}
               className="font-semibold text-gold underline-offset-4 hover:underline"
             >
-              Portal KPU
+              Portal Panitia
             </button>
           </div>
         </section>

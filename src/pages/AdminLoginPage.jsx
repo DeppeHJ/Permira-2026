@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertCircle, ArrowLeft, KeyRound, Landmark, Mail, ShieldAlert } from 'lucide-react'
 import { BrandLogo, Spinner } from '../components/SharedUI'
 
-export default function AdminLoginPage({ onLogin, loading, error, onBack, variant = 'kpu' }) {
+export default function AdminLoginPage({ onLogin, loading, error, onBack, variant = 'panitia' }) {
   const isSuper = variant === 'super'
   const TitleIcon = isSuper ? ShieldAlert : Landmark
   const [email, setEmail] = useState('')
@@ -27,15 +27,15 @@ export default function AdminLoginPage({ onLogin, loading, error, onBack, varian
         aria-labelledby="admin-login-title"
         className="relative z-10 w-full max-w-md animate-rise rounded-2xl border border-gold/25 bg-card-dark p-6 shadow-2xl shadow-black/60 sm:p-8"
       >
-        <BrandLogo subtitle={isSuper ? 'Portal Super Admin' : 'Portal Komisi Pemilihan (KPU)'} />
+        <BrandLogo subtitle={isSuper ? 'Portal Super Admin' : 'Portal Panitia Pemilihan'} />
         <h1 id="admin-login-title" className="mt-6 flex items-center gap-2 text-2xl font-bold text-white">
           <TitleIcon className="h-6 w-6 text-gold" aria-hidden="true" />{' '}
-          {isSuper ? 'Masuk Super Admin' : 'Masuk Admin KPU'}
+          {isSuper ? 'Masuk Super Admin' : 'Masuk Admin Panitia'}
         </h1>
         <p className="mt-1 text-sm text-gold/70">
           {isSuper
             ? 'Akses khusus pengelola sistem pemilihan.'
-            : 'Akses terbatas untuk anggota KPU yang terdaftar.'}
+            : 'Akses terbatas untuk Panitia yang terdaftar.'}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5" noValidate>
@@ -54,7 +54,7 @@ export default function AdminLoginPage({ onLogin, loading, error, onBack, varian
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={isSuper ? 'superadmin@kpu.ac.id' : 'admin@kpu.ac.id'}
+                placeholder={isSuper ? 'superadmin@panitia.ac.id' : 'admin@panitia.ac.id'}
                 className="h-12 w-full rounded-xl border border-gold/25 bg-bean/60 pl-12 pr-4 text-white placeholder:text-gold/30 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30"
               />
             </div>
@@ -102,7 +102,7 @@ export default function AdminLoginPage({ onLogin, loading, error, onBack, varian
                 <Spinner /> Memverifikasi…
               </>
             ) : (
-              isSuper ? 'Masuk ke Panel Super Admin' : 'Masuk ke Dashboard KPU'
+              isSuper ? 'Masuk ke Panel Super Admin' : 'Masuk ke Dashboard Panitia'
             )}
           </button>
         </form>

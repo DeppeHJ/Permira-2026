@@ -59,7 +59,7 @@ const readSession = () => {
 const getRoute = () => {
   const hash = window.location.hash
   if (hash.startsWith('#/superadmin')) return 'super'
-  return hash.startsWith('#/kpu') ? 'admin' : 'voter'
+  return hash.startsWith('#/panitia') || hash.startsWith('#/kpu') ? 'admin' : 'voter'
 }
 
 const getInitialPage = () => {
@@ -125,7 +125,7 @@ export default function App() {
   const adminUser = authReady && isAdminUser(authUser) ? authUser : null
   const superUser = authReady && isSuperAdminUser(authUser) ? authUser : null
 
-  // Routing hash dua arah: merespons tombol browser Back/Forward & portal admin #/kpu.
+  // Routing hash dua arah: merespons tombol browser Back/Forward & portal admin #/panitia.
   useEffect(() => {
     const onHashChange = () => {
       const nextRoute = getRoute()
@@ -372,7 +372,7 @@ export default function App() {
     window.location.hash = activeVoter ? '#/dashboard' : ''
   }
   const goAdmin = () => {
-    window.location.hash = '#/kpu'
+    window.location.hash = '#/panitia'
   }
 
   /* -------------------------------- Render ------------------------------- */

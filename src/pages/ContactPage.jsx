@@ -204,7 +204,7 @@ export default function ContactPage({ onBack, onNavigate }) {
             <h3 className="font-bold text-sm text-gold">NPM tidak terdaftar di DPT?</h3>
             <p className="mt-1 text-xs leading-relaxed text-gold/80">
               Pastikan format penulisan NPM Anda benar (hanya angka). Jika masih dinyatakan tidak
-              terdaftar, silakan hubungi <strong>Divisi DPT KPU</strong> untuk pengecekan status
+              terdaftar, silakan hubungi <strong>Divisi DPT Panitia</strong> untuk pengecekan status
               mahasiswa aktif.
             </p>
           </div>
@@ -232,7 +232,7 @@ export default function ContactPage({ onBack, onNavigate }) {
       <footer className="text-center text-xs text-gold/60">
         <p className="flex items-center justify-center gap-1.5">
           <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
-          Komisi Pemilihan Umum Mahasiswa • {appName}
+          Panitia Pemilihan • {appName}
         </p>
       </footer>
     </div>

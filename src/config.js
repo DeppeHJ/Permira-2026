@@ -14,7 +14,7 @@ export const FIREBASE_CONFIG = {
 /** URL Web App Google Apps Script untuk kirim & verifikasi OTP. */
 export const OTP_SCRIPT_URL = import.meta.env.VITE_OTP_SCRIPT_URL || ''
 
-/** Daftar email Admin KPU yang diizinkan (huruf kecil). */
+/** Daftar email Admin Panitia yang diizinkan (huruf kecil). */
 export const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -22,7 +22,7 @@ export const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
 
 /**
  * Daftar email Super Admin (huruf kecil). Super Admin juga otomatis boleh membuka
- * Dashboard KPU, dan satu-satunya yang boleh mengubah tahun, timeline, SOP, kandidat,
+ * Dashboard Panitia, dan satu-satunya yang boleh mengubah tahun, timeline, SOP, kandidat,
  * serta mereset data pemilihan. WAJIB sama dengan daftar di firestore.rules.
  */
 export const SUPER_ADMIN_EMAILS = (import.meta.env.VITE_SUPER_ADMIN_EMAILS || '')

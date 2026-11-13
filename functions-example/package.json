@@ -1,0 +1,14 @@
+{
+  "name": "permira-otp-functions",
+  "version": "1.0.0",
+  "description": "Contoh backend serverless OTP dengan Resend / Brevo untuk PERMIRA",
+  "main": "otpHandler.js",
+  "scripts": {
+    "start": "node otpHandler.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "resend": "^3.2.0"
+  }
+}

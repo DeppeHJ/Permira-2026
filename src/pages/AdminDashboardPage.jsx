@@ -247,7 +247,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
     <div className="min-h-screen bg-bean">
       <header className="sticky top-0 z-40 border-b border-gold/12 bg-bean/95 backdrop-blur">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
-          <BrandLogo subtitle="Dashboard KPU" />
+          <BrandLogo subtitle="Dashboard Panitia" />
           <div className="flex items-center gap-3">
             <div className="hidden text-right leading-tight sm:block">
               <p className="text-xs text-gold/60">Masuk sebagai</p>

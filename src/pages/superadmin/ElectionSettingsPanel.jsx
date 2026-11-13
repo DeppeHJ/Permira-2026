@@ -17,7 +17,7 @@ const STEPS = [
   'Reset data pemilihan untuk menghapus DPT dan kotak suara lama.',
   'Ubah tahun pemilihan (dan nama bila perlu).',
   'Sesuaikan Timeline, SOP, dan Kandidat pada tab masing-masing.',
-  'Buka Dashboard KPU lalu impor DPT baru (.csv).',
+  'Buka Dashboard Panitia lalu impor DPT baru (.csv).',
 ]
 
 export default function ElectionSettingsPanel({ showToast }) {

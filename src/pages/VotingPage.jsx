@@ -30,7 +30,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
 
       {config.candidates.length === 0 && (
         <p className="mt-8 rounded-2xl border border-gold/25 bg-card-dark p-6 text-center text-sm text-gold/80">
-          Belum ada kandidat yang terdaftar untuk tahap ini. Hubungi Panitia KPU.
+          Belum ada kandidat yang terdaftar untuk tahap ini. Hubungi Panitia.
         </p>
       )}
 

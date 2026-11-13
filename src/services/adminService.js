@@ -11,7 +11,7 @@ const isListedUser = (user, list) =>
 /** Super Admin (email/password + terdaftar di VITE_SUPER_ADMIN_EMAILS). */
 export const isSuperAdminUser = (user) => isListedUser(user, SUPER_ADMIN_EMAILS)
 
-/** Admin KPU yang sah. Super Admin otomatis juga dianggap Admin KPU. */
+/** Admin Panitia yang sah. Super Admin otomatis juga dianggap Admin Panitia. */
 export const isAdminUser = (user) =>
   isListedUser(user, ADMIN_EMAILS) || isSuperAdminUser(user)
 
@@ -23,13 +23,13 @@ const AUTH_ERRORS = {
   'auth/network-request-failed': 'Koneksi internet bermasalah.',
 }
 
-/** Login Admin KPU. Akun di luar daftar resmi langsung dikeluarkan kembali. */
+/** Login Admin Panitia. Akun di luar daftar resmi langsung dikeluarkan kembali. */
 export async function loginAdmin(email, password) {
   const cleanEmail = String(email ?? '').trim().toLowerCase()
   if (!cleanEmail || !password) throw new Error('Email dan kata sandi wajib diisi.')
 
   if (!ADMIN_EMAILS.includes(cleanEmail) && !SUPER_ADMIN_EMAILS.includes(cleanEmail)) {
-    throw new Error('Akun ini tidak memiliki akses ke Dashboard KPU.')
+    throw new Error('Akun ini tidak memiliki akses ke Dashboard Panitia.')
   }
 
   try {

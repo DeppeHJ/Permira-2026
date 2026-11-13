@@ -3,7 +3,7 @@
  * isi SOP, dan jadwal pemilihan.
  *
  * Catatan: nama kandidat, visi, misi, dan jadwal di bawah ini adalah data contoh.
- * Ganti sesuai keputusan resmi KPU sebelum dipakai di pemilihan sebenarnya.
+ * Ganti sesuai keputusan resmi Panitia sebelum dipakai di pemilihan sebenarnya.
  * ID kandidat (`ai-01`, `bem-01`, dst.) juga tercantum di firestore.rules —
  * ubah di kedua tempat jika jumlah kandidat berubah.
  */
@@ -46,7 +46,7 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-03',
-    name: 'Divisi DPT & Data Pemilih KPU',
+    name: 'Divisi DPT & Data Pemilih Panitia',
     role: 'Verifikasi Status DPT & Angkatan',
     phone: '0812-3456-7893',
     whatsapp: '6281234567893',
@@ -55,7 +55,7 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-04',
-    name: 'Humas & Protokoler KPU',
+    name: 'Humas & Protokoler Panitia',
     role: 'Informasi Alur & SOP Pemilihan',
     phone: '0812-3456-7894',
     whatsapp: '6281234567894',
@@ -274,12 +274,12 @@ export const SOP_TABS = [
       'Jika OTP belum masuk, periksa folder spam/promosi lalu kirim ulang setelah jeda 30 detik.',
       'Kode OTP kedaluwarsa dalam 90 detik; minta kode baru bila sudah habis.',
       'Jangan menutup halaman saat proses pengiriman suara berlangsung.',
-      'Hubungi Panitia KPU bila data Anda tidak ditemukan atau email terdaftar tidak aktif.',
+      'Hubungi Panitia bila data Anda tidak ditemukan atau email terdaftar tidak aktif.',
     ],
   },
 ]
 
-/** Jadwal pemilihan (contoh — sesuaikan dengan keputusan KPU). */
+/** Jadwal pemilihan (contoh — sesuaikan dengan keputusan Panitia). */
 export const ELECTION_TIMELINE = [
   { id: 'dpt', title: 'Penetapan DPT', date: '19 Okt 2026', status: 'done' },
   { id: 'kampanye', title: 'Masa Kampanye & Debat', date: '20 – 22 Okt 2026', status: 'done' },

@@ -43,12 +43,12 @@ export default function SuperAdminPage({ user, onLogout, showToast }) {
               <p className="text-sm font-semibold text-gold">{user.email}</p>
             </div>
             <a
-              href="#/kpu"
-              id="link-kpu-dashboard"
+              href="#/panitia"
+              id="link-panitia-dashboard"
               className="flex h-11 items-center gap-2 rounded-xl border border-gold/25 px-4 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
             >
               <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Dashboard KPU</span>
+              <span className="hidden sm:inline">Dashboard Panitia</span>
             </a>
             <button
               type="button"

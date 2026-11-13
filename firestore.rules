@@ -15,7 +15,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
 
-    // Admin KPU = login Email/Password dengan salah satu dari 3 email resmi.
+    // Admin Panitia = login Email/Password dengan salah satu dari 3 email resmi.
     // WAJIB sama dengan VITE_ADMIN_EMAILS dan akun yang dibuat di Firebase Auth.
     function isKpuAdmin() {
       return isSignedIn()
@@ -37,7 +37,7 @@ service cloud.firestore {
         ];
     }
 
-    // Super Admin otomatis memiliki seluruh hak Admin KPU.
+    // Super Admin otomatis memiliki seluruh hak Admin Panitia.
     function isAdmin() {
       return isKpuAdmin() || isSuperAdmin();
     }
@@ -86,7 +86,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted', 'votedAt'])
           && request.resource.data.votedAt == request.time);
 
-      // Admin KPU hanya boleh menghapus pemilih yang belum memilih.
+      // Admin Panitia hanya boleh menghapus pemilih yang belum memilih.
       // Super Admin boleh menghapus semuanya (reset DPT untuk periode baru).
       allow delete: if isSuperAdmin() || (isAdmin() && resource.data.hasVoted == false);
     }

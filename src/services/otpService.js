@@ -10,7 +10,7 @@ const REQUEST_TIMEOUT_MS = 20000
  */
 async function callScript(payload) {
   if (!OTP_SCRIPT_URL) {
-    throw new Error('Layanan OTP belum dikonfigurasi. Hubungi Panitia KPU.')
+    throw new Error('Layanan OTP belum dikonfigurasi. Hubungi Panitia.')
   }
 
   const controller = new AbortController()

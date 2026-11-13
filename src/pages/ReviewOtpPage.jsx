@@ -318,7 +318,7 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
               Kendala Menerima OTP?
             </h3>
             <p className="mt-1.5 text-gold/80 leading-relaxed">
-              Jika kode OTP tidak masuk ke folder Utama maupun Spam, hubungi narahubung panitia KPU.
+              Jika kode OTP tidak masuk ke folder Utama maupun Spam, hubungi narahubung Panitia.
             </p>
             <button
               type="button"

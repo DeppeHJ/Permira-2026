@@ -32,7 +32,7 @@ google-apps-script/Code.gs
 4. Pasang `google-apps-script/Code.gs` (petunjuk di komentar file), deploy sebagai Web App, isi `VITE_OTP_SCRIPT_URL`.
 5. `npm run dev`.
    - Portal Pemilih: `http://localhost:5173/`
-   - Portal KPU: `http://localhost:5173/#/kpu`
+   - Portal Panitia: `http://localhost:5173/#/panitia` (atau `#/kpu`)
    - Portal Super Admin: `http://localhost:5173/#/superadmin`
 
 ## Hak Akses & Fitur Super Admin (`#/superadmin`)
@@ -57,4 +57,4 @@ google-apps-script/Code.gs
 - `dpt/{npm}`: identitas pemilih (`hasVoted`, `votedAt`).
 - `votes/{auto-id}`: `{ aiId, kabemId }` — tanpa NPM/email/nama/waktu.
 - `stats/{angkatan}`: total & jumlah sudah memilih (untuk dashboard pemilih).
-- Format CSV DPT: `npm,nama,email,angkatan` (unduh templat dari dashboard KPU).
+- Format CSV DPT: `npm,nama,email,angkatan` (unduh templat dari dashboard Panitia).
