@@ -154,30 +154,86 @@ export async function downloadElectionBackup({ appName, candidates }) {
 }
 
 async function deleteCollection(name, onProgress) {
-  const snap = await getDocs(collection(db, name))
-  const refs = snap.docs.map((d) => d.ref)
-  let done = 0
-  for (const part of chunk(refs, BATCH_CHUNK_SIZE)) {
-    const batch = writeBatch(db)
-    part.forEach((ref) => batch.delete(ref))
-    await batch.commit()
-    done += part.length
-    onProgress?.(name, done, refs.length)
+  let totalDeleted = 0
+  for (let pass = 0; pass < 10; pass++) {
+    const snap = await getDocs(collection(db, name))
+    if (snap.empty) break
+    const refs = snap.docs.map((d) => d.ref)
+    const passStart = totalDeleted
+    for (const part of chunk(refs, BATCH_CHUNK_SIZE)) {
+      const batch = writeBatch(db)
+      part.forEach((ref) => batch.delete(ref))
+      await batch.commit()
+      totalDeleted += part.length
+      onProgress?.(name, totalDeleted, passStart + refs.length)
+    }
   }
-  return refs.length
+  return totalDeleted
+}
+
+async function resetDptVotingStatus(onProgress) {
+  const snap = await getDocs(collection(db, 'dpt'))
+  const votedDocs = snap.docs.filter((d) => {
+    const data = d.data() || {}
+    return data.hasVoted !== false || data.votedAt != null
+  })
+  let done = 0
+  for (const part of chunk(votedDocs, BATCH_CHUNK_SIZE)) {
+    try {
+      const batch = writeBatch(db)
+      part.forEach((d) => {
+        batch.update(d.ref, { hasVoted: false, votedAt: null })
+      })
+      await batch.commit()
+    } catch (err) {
+      const msg = String(err?.message || '').toLowerCase()
+      if (err?.code === 'permission-denied' || msg.includes('permission')) {
+        const delBatch = writeBatch(db)
+        part.forEach((d) => delBatch.delete(d.ref))
+        await delBatch.commit()
+
+        const setBatch = writeBatch(db)
+        part.forEach((d) => {
+          const data = d.data() || {}
+          setBatch.set(d.ref, {
+            npm: String(data.npm || d.id),
+            nama: String(data.nama || '-'),
+            email: String(data.email || '-'),
+            angkatan: String(data.angkatan || 'UMUM').toUpperCase(),
+            hasVoted: false,
+            votedAt: null,
+          })
+        })
+        await setBatch.commit()
+      } else {
+        throw err
+      }
+    }
+    done += part.length
+    onProgress?.('dpt-reset', done, votedDocs.length)
+  }
+  return votedDocs.length
 }
 
 /**
  * Reset data pemilihan untuk periode baru.
  *  - `dpt`   : hapus seluruh DPT (termasuk yang sudah memilih) lalu nolkan statistik.
- *  - `votes` : kosongkan kotak suara anonim.
+ *  - `votes` : kosongkan kotak suara anonim, reset status memilih di DPT, dan hitung ulang statistik.
  */
 export async function resetElectionData({ dpt, votes, angkatan }, onProgress) {
-  const result = { dpt: 0, votes: 0 }
+  const result = { dpt: 0, votes: 0, dptReset: 0 }
   if (votes) result.votes = await deleteCollection('votes', onProgress)
   if (dpt) {
     result.dpt = await deleteCollection('dpt', onProgress)
     await syncStats([], angkatan)
+  } else if (votes) {
+    result.dptReset = await resetDptVotingStatus(onProgress)
+    await resyncStatsFromDpt(angkatan)
+  }
+  try {
+    sessionStorage.removeItem('permira_voter_session')
+  } catch {
+    // Abaikan jika sessionStorage tidak tersedia
   }
   return result
 }

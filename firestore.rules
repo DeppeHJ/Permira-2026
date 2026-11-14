@@ -62,29 +62,55 @@ service cloud.firestore {
     // Field: npm, nama, email, angkatan, hasVoted, votedAt
     // ------------------------------------------------------------------
     match /dpt/{npm} {
+      // Validasi skema, tipe, batas ukuran string, dan konsistensi ID dokumen DPT.
+      function isValidDpt(data) {
+        return data.keys().hasAll(['npm', 'nama', 'email', 'angkatan', 'hasVoted'])
+          && data.npm is string && data.npm == npm
+          && data.npm.size() >= 1 && data.npm.size() <= 30
+          && data.nama is string && data.nama.size() >= 1 && data.nama.size() <= 200
+          && data.email is string && data.email.size() >= 1 && data.email.size() <= 254
+          && data.angkatan is string && data.angkatan.size() >= 1 && data.angkatan.size() <= 60
+          && (data.hasVoted is bool || data.hasVoted == null || data.hasVoted == 'false')
+          && (!('votedAt' in data) || data.votedAt == null || data.votedAt is timestamp);
+      }
+
       // Pemilih hanya boleh membaca SATU dokumen berdasarkan NPM (tidak bisa list/scan).
       allow get: if isAdmin() || isVoter();
       allow list: if isAdmin();
 
       // Admin menambah pemilih baru (impor CSV) dengan hasVoted = false.
       allow create: if isAdmin()
+        && isValidDpt(request.resource.data)
+        && request.resource.data.keys().hasOnly(['npm', 'nama', 'email', 'angkatan', 'hasVoted', 'votedAt'])
         && request.resource.data.keys().hasAll(['npm', 'nama', 'email', 'angkatan', 'hasVoted', 'votedAt'])
-        && request.resource.data.npm == npm
         && (request.resource.data.hasVoted == false || request.resource.data.hasVoted == null)
         && request.resource.data.votedAt == null;
 
-      allow update: if
-        // Admin boleh memperbarui data, tetapi TIDAK boleh membalik status memilih.
-        (isAdmin()
+      allow update: if isValidDpt(request.resource.data) && (
+        // Super Admin boleh memperbarui data DPT serta mereset status memilih (hasVoted = false, votedAt = null)
+        // saat mengosongkan kotak suara tanpa menghapus DPT.
+        (isSuperAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['npm', 'nama', 'email', 'angkatan', 'hasVoted', 'votedAt'])
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hasVoted', 'votedAt'])
+            || ('votedAt' in request.resource.data
+              && request.resource.data.hasVoted == false
+              && request.resource.data.votedAt == null)
+          ))
+        ||
+        // Admin Panitia boleh memperbarui data, tetapi TIDAK boleh mengubah/membalik status memilih.
+        (isKpuAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['npm', 'nama', 'email', 'angkatan'])
           && request.resource.data.hasVoted == resource.data.hasVoted
-          && request.resource.data.votedAt == resource.data.votedAt)
+          && (!('votedAt' in resource.data) || request.resource.data.votedAt == resource.data.votedAt))
         ||
         // Pemilih: satu arah false/null/'false' -> true, hanya field hasVoted & votedAt, waktu dari server.
         (isVoter()
           && (resource.data.hasVoted == false || resource.data.hasVoted == null || resource.data.hasVoted == 'false')
           && request.resource.data.hasVoted == true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted', 'votedAt'])
-          && request.resource.data.votedAt == request.time);
+          && request.resource.data.votedAt == request.time)
+      );
 
       // Admin Panitia hanya boleh menghapus pemilih yang belum memilih.
       // Super Admin boleh menghapus semuanya (reset DPT untuk periode baru).

@@ -21,11 +21,9 @@ const normalize = (items) =>
   (items || []).map((item) => ({
     id: item.id || newId(),
     name: String(item.name || '').trim(),
-    role: String(item.role || '').trim(),
     phone: String(item.phone || '').trim(),
     whatsapp: String(item.whatsapp || '').trim(),
     available: String(item.available || '').trim(),
-    description: String(item.description || '').trim(),
   }))
 
 export default function ContactsPanel({ showToast }) {
@@ -66,11 +64,9 @@ export default function ContactsPanel({ showToast }) {
       {
         id: newId(),
         name: `Narahubung Baru ${prev.length + 1}`,
-        role: 'Layanan Bantuan',
         phone: '0812-0000-0000',
         whatsapp: '6281200000000',
         available: '08.00 - 20.00 WIB',
-        description: 'Bantuan umum seputar pemilihan raya.',
       },
     ])
   }
@@ -125,11 +121,9 @@ export default function ContactsPanel({ showToast }) {
       const cleaned = items.map((i) => ({
         id: i.id || newId(),
         name: i.name.trim(),
-        role: i.role.trim(),
         phone: i.phone.trim(),
         whatsapp: i.whatsapp.replace(/[^0-9]/g, '') || i.phone.replace(/[^0-9]/g, ''),
         available: i.available.trim(),
-        description: i.description.trim(),
       }))
 
       await saveContacts(cleaned)
@@ -192,7 +186,7 @@ export default function ContactsPanel({ showToast }) {
                       #{index + 1}
                     </span>
                     <span className="text-sm font-bold text-gold">
-                      {item.role || `Kontak ${index + 1}`}
+                      {item.name || `Narahubung ${index + 1}`}
                     </span>
                   </div>
 
@@ -228,7 +222,7 @@ export default function ContactsPanel({ showToast }) {
                   </div>
                 </div>
 
-                <div className="mt-3.5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-gold/80">
                       Nama Kontak
@@ -238,19 +232,6 @@ export default function ContactsPanel({ showToast }) {
                       value={item.name}
                       placeholder="Contoh: Helpdesk Teknis 1"
                       onChange={(e) => update(index, { name: e.target.value })}
-                      className={inputSingle}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gold/80">
-                      Divisi / Peran (Role)
-                    </label>
-                    <input
-                      type="text"
-                      value={item.role}
-                      placeholder="Contoh: Kendala OTP & Sistem"
-                      onChange={(e) => update(index, { role: e.target.value })}
                       className={inputSingle}
                     />
                   </div>
@@ -305,19 +286,6 @@ export default function ContactsPanel({ showToast }) {
                         className={`${inputSingle} pl-9 font-mono text-xs`}
                       />
                     </div>
-                  </div>
-
-                  <div className="sm:col-span-2 lg:col-span-1">
-                    <label className="mb-1 block text-xs font-semibold text-gold/80">
-                      Deskripsi Bantuan Singkat
-                    </label>
-                    <input
-                      type="text"
-                      value={item.description}
-                      placeholder="Contoh: Bantuan login dan kendala OTP"
-                      onChange={(e) => update(index, { description: e.target.value })}
-                      className={inputSingle}
-                    />
                   </div>
                 </div>
               </div>

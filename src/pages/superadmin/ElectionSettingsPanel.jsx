@@ -108,14 +108,23 @@ export default function ElectionSettingsPanel({ showToast }) {
     try {
       const result = await resetElectionData(
         { ...resetOpts, angkatan: election.angkatan },
-        (collectionName, done, total) =>
-          setProgress(`Menghapus ${collectionName === 'dpt' ? 'DPT' : 'kotak suara'}: ${done}/${total}`),
+        (collectionName, done, total) => {
+          const label =
+            collectionName === 'dpt'
+              ? 'Menghapus DPT'
+              : collectionName === 'dpt-reset'
+                ? 'Mereset status pemilih DPT'
+                : 'Menghapus kotak suara'
+          setProgress(`${label}: ${done}/${total}`)
+        },
       )
       setResetOpen(false)
       showToast({
         type: 'success',
         title: 'Data pemilihan direset',
-        message: `${result.dpt} pemilih dan ${result.votes} surat suara dihapus.`,
+        message: result.dptReset
+          ? `${result.votes} surat suara dihapus dan ${result.dptReset} status pemilih direset.`
+          : `${result.dpt} pemilih dan ${result.votes} surat suara dihapus.`,
       })
     } catch (error) {
       showToast({
@@ -226,7 +235,8 @@ export default function ElectionSettingsPanel({ showToast }) {
               className="mt-1 h-4 w-4 accent-brand"
             />
             <span className="text-sm text-gold/90">
-              <strong className="text-gold">Kosongkan kotak suara</strong> (hasil perolehan suara kandidat kembali 0).
+              <strong className="text-gold">Kosongkan kotak suara</strong> (hapus seluruh surat suara,
+              reset status memilih di DPT, dan nolkan perolehan suara).
             </span>
           </label>
         </fieldset>

@@ -53,7 +53,7 @@ export async function loginVoter({ identity, npm }) {
       npm: cleanNpm,
       nama: data.nama,
       email: data.email,
-      angkatan: data.angkatan,
+      angkatan: String(data.angkatan || '').toUpperCase(),
       hasVoted: data.hasVoted === true,
     }
   } catch (error) {
@@ -71,7 +71,7 @@ export async function fetchVoterStatus(npm) {
       npm,
       nama: data.nama,
       email: data.email,
-      angkatan: data.angkatan,
+      angkatan: String(data.angkatan || '').toUpperCase(),
       hasVoted: data.hasVoted === true,
     },
     hasVoted: data.hasVoted === true,
@@ -100,13 +100,23 @@ export async function castVote({ npm, aiId, kabemId }) {
         throw new Error('Hak suara Anda sudah digunakan.')
       }
 
-      const statsRef = doc(db, 'stats', String(dpt.angkatan))
-      const statsSnap = await tx.get(statsRef)
+      const rawAngkatan = String(dpt.angkatan || '').trim()
+      const upperKey = rawAngkatan.toUpperCase()
+      const lowerKey = rawAngkatan.toLowerCase()
+
+      const upperStatsRef = upperKey ? doc(db, 'stats', upperKey) : null
+      const lowerStatsRef = lowerKey && lowerKey !== upperKey ? doc(db, 'stats', lowerKey) : null
+
+      const upperSnap = upperStatsRef ? await tx.get(upperStatsRef) : null
+      const lowerSnap = (!upperSnap || !upperSnap.exists()) && lowerStatsRef ? await tx.get(lowerStatsRef) : null
+
+      const targetStatsRef = upperSnap?.exists() ? upperStatsRef : (lowerSnap?.exists() ? lowerStatsRef : null)
+      const targetStatsSnap = upperSnap?.exists() ? upperSnap : (lowerSnap?.exists() ? lowerSnap : null)
 
       tx.update(dptRef, { hasVoted: true, votedAt: serverTimestamp() })
       tx.set(ballotRef, { aiId, kabemId })
-      if (statsSnap.exists()) {
-        tx.update(statsRef, { voted: (statsSnap.data().voted || 0) + 1 })
+      if (targetStatsRef && targetStatsSnap) {
+        tx.update(targetStatsRef, { voted: (targetStatsSnap.data().voted || 0) + 1 })
       }
     })
   } catch (error) {

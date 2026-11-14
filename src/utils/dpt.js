@@ -12,16 +12,17 @@ const HEADER_ALIASES = {
   angkatan: ['angkatan', 'kategori', 'jenjang'],
 }
 
-/** Petakan nilai angkatan bebas menjadi salah satu key resmi, atau null jika tidak dikenali. */
+/** Petakan nilai angkatan bebas menjadi salah satu key resmi huruf kapital, atau null jika tidak dikenali. */
 export function normalizeAngkatan(raw, npm, angkatanList = DEFAULT_ANGKATAN) {
   const value = String(raw ?? '').trim().toLowerCase()
+  const asUpperKey = (item) => (item ? String(item.key || '').trim().toUpperCase() : null)
 
   if (value) {
     // 1. Direct match on key or label
     const direct = angkatanList.find(
       (a) => a.key.toLowerCase() === value || a.label.toLowerCase() === value,
     )
-    if (direct) return direct.key
+    if (direct) return asUpperKey(direct)
 
     // 2. Simplified slug comparison (stripping spaces, punctuation, "akt", "angkatan")
     const clean = (str) =>
@@ -30,14 +31,14 @@ export function normalizeAngkatan(raw, npm, angkatanList = DEFAULT_ANGKATAN) {
     const slugMatch = angkatanList.find(
       (a) => clean(a.key) === cleanValue || clean(a.label) === cleanValue,
     )
-    if (slugMatch) return slugMatch.key
+    if (slugMatch) return asUpperKey(slugMatch)
 
     // 3. Profesi
     if (/profesi|prof/.test(value)) {
       const prof = angkatanList.find(
         (a) => a.key.toLowerCase().includes('prof') || a.label.toLowerCase().includes('prof'),
       )
-      if (prof) return prof.key
+      if (prof) return asUpperKey(prof)
     }
 
     // 4. Extract degree & year (e.g. S1, S2, S3, RPL)
@@ -56,7 +57,7 @@ export function normalizeAngkatan(raw, npm, angkatanList = DEFAULT_ANGKATAN) {
           a.key.toLowerCase() === `${degree}-${yy}` ||
           (a.label.toLowerCase().includes(degree) && a.label.toLowerCase().includes(yy)),
       )
-      if (match) return match.key
+      if (match) return asUpperKey(match)
     }
 
     // If degree not specified, but 2-digit year found (e.g. "2026", "26", "Angkatan 2024"):
@@ -68,14 +69,14 @@ export function normalizeAngkatan(raw, npm, angkatanList = DEFAULT_ANGKATAN) {
           a.key.toLowerCase() === `20${yy}` ||
           a.key.toLowerCase() === yy,
       )
-      if (s1Match) return s1Match.key
+      if (s1Match) return asUpperKey(s1Match)
     }
 
     // Fallback: any category whose key or label contains the year or raw text
     const fallback = angkatanList.find(
-      (a) => (yy && (a.key.includes(yy) || a.label.includes(yy))) || a.key.toLowerCase() === value,
+      (a) => (yy && (a.key.toLowerCase().includes(yy) || a.label.toLowerCase().includes(yy))) || a.key.toLowerCase() === value,
     )
-    if (fallback) return fallback.key
+    if (fallback) return asUpperKey(fallback)
 
     return null
   }
@@ -96,7 +97,7 @@ export function normalizeAngkatan(raw, npm, angkatanList = DEFAULT_ANGKATAN) {
         a.key.toLowerCase() === `20${prefix}` ||
         a.label.toLowerCase().includes(prefix),
     )
-    if (s1Match) return s1Match.key
+    if (s1Match) return asUpperKey(s1Match)
   }
   return null
 }

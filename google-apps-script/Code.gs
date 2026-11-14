@@ -27,7 +27,7 @@
  */
 
 // ====================== KONFIGURASI ======================
-var OTP_TTL_SECONDS = 90;        // harus sama dengan OTP_TTL_SECONDS di src/config.js
+var OTP_TTL_SECONDS = 180;       // harus sama dengan OTP_TTL_SECONDS di src/config.js
 var RESEND_COOLDOWN_SECONDS = 25; // sedikit lebih kecil dari jeda di klien (30 dtk)
 var MAX_ATTEMPTS = 5;
 var SENDER_NAME = 'Panitia PERMIRA 2026';
@@ -82,8 +82,8 @@ function sendOtp_(npm, body) {
       to: email,
       subject: 'Kode OTP PERMIRA 2026',
       name: SENDER_NAME,
-      body: 'Halo ' + nama + ',\n\nKode OTP Anda: ' + otp + '\n\nBerlaku ' + OTP_TTL_SECONDS +
-        ' detik dan hanya dapat dipakai sekali. Jangan bagikan kode ini kepada siapa pun, termasuk panitia.\n\n' +
+      body: 'Halo ' + nama + ',\n\nKode OTP Anda: ' + otp + '\n\nBerlaku 3 menit (' + OTP_TTL_SECONDS +
+        ' detik) dan hanya dapat dipakai sekali. Jangan bagikan kode ini kepada siapa pun, termasuk panitia.\n\n' +
         'Jika Anda tidak sedang memilih di PERMIRA 2026, abaikan email ini.',
       htmlBody: buildHtml_(nama, otp)
     });
@@ -208,7 +208,7 @@ function buildHtml_(nama, otp) {
     '<p>Halo <b>' + nama + '</b>,</p>' +
     '<p>Gunakan kode berikut untuk memverifikasi suara Anda:</p>' +
     '<p style="text-align:center;font-size:36px;font-weight:bold;letter-spacing:10px;background:#E8C580;color:#2A0B02;border-radius:12px;padding:16px">' + otp + '</p>' +
-    '<p style="font-size:13px;color:#66554E">Berlaku ' + OTP_TTL_SECONDS + ' detik dan hanya dapat dipakai sekali. ' +
+    '<p style="font-size:13px;color:#66554E">Berlaku 3 menit (' + OTP_TTL_SECONDS + ' detik) dan hanya dapat dipakai sekali. ' +
     'Jangan bagikan kode ini kepada siapa pun, termasuk panitia.</p>' +
     '</div></div></div>';
 }

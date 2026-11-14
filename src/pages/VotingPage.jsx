@@ -16,7 +16,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
   const selected = getCandidate(selectedId)
 
   return (
-    <div className="mx-auto max-w-7xl animate-rise px-4 py-8 pb-32 lg:px-8 lg:py-10">
+    <div className="mx-auto max-w-7xl animate-rise px-4 pt-6 pb-44 sm:pt-8 sm:pb-36 lg:px-8 lg:pt-10 lg:pb-36">
       <div className="rounded-2xl border border-gold/25 bg-card-dark/70 p-4 sm:p-6">
         <Stepper step={isAi ? 2 : 3} />
       </div>

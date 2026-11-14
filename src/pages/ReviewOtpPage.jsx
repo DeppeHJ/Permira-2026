@@ -44,6 +44,7 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
   const [error, setError] = useState('')
   const [shakeKey, setShakeKey] = useState(0)
   const inputRefs = useRef([])
+  const usedCodesRef = useRef(new Set())
 
   // Detak 1 detik untuk hitung mundur OTP & jeda kirim ulang.
   useEffect(() => {
@@ -132,11 +133,25 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
 
   const handleSubmit = async () => {
     if (!canSubmit) return
+    if (usedCodesRef.current.has(code)) {
+      setError('Kode OTP ini sudah pernah digunakan. Silakan kirim ulang kode OTP baru.')
+      setDigits(EMPTY_DIGITS)
+      setShakeKey((k) => k + 1)
+      setTimeout(() => focusInput(0), 50)
+      return
+    }
     setSubmitting(true)
     setError('')
     try {
       await onSubmit(code)
+      usedCodesRef.current.add(code)
     } catch (err) {
+      const msg = String(err?.message || '').toLowerCase()
+      if (msg.includes('sudah terpakai') || msg.includes('sudah digunakan')) {
+        usedCodesRef.current.add(code)
+        setOtpSent(false)
+        setExpiresAt(0)
+      }
       setError(err.message)
       setDigits(EMPTY_DIGITS)
       setShakeKey((k) => k + 1)
@@ -185,7 +200,7 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
               <p className="text-sm text-ink-soft">
                 Kode 6 digit akan dikirim ke email terdaftar{' '}
                 <strong className="text-ink">{maskEmail(voter.email)}</strong>. Kode berlaku{' '}
-                {OTP_TTL_SECONDS} detik dan hanya dapat dipakai sekali.
+                3 menit ({OTP_TTL_SECONDS} detik) dan hanya dapat dipakai sekali.
               </p>
 
               <button

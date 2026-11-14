@@ -31,7 +31,7 @@ export const SUPER_ADMIN_EMAILS = (import.meta.env.VITE_SUPER_ADMIN_EMAILS || ''
   .filter(Boolean)
 
 /** Masa berlaku kode OTP (detik) — harus sama dengan OTP_TTL_SECONDS di Code.gs. */
-export const OTP_TTL_SECONDS = 90
+export const OTP_TTL_SECONDS = 180
 
 /** Jeda minimum sebelum OTP dapat dikirim ulang (detik). */
 export const OTP_RESEND_SECONDS = 30

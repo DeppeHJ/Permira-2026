@@ -33,7 +33,7 @@ var SENDER_EMAIL = 'onboarding@resend.dev';
 var SENDER_NAME  = 'Panitia PERMIRA 2026';
 
 // Pengaturan OTP
-var OTP_TTL_SECONDS = 90;        // Masa berlaku OTP (harus sama dengan src/config.js)
+var OTP_TTL_SECONDS = 180;       // Masa berlaku OTP (harus sama dengan src/config.js)
 var RESEND_COOLDOWN_SECONDS = 25; // Jeda kirim ulang
 var MAX_ATTEMPTS = 5;
 // ================================================================
@@ -180,8 +180,8 @@ function sendViaGmail_(email, nama, otp, subject, htmlContent) {
     to: email,
     subject: subject,
     name: SENDER_NAME,
-    body: 'Halo ' + nama + ',\n\nKode OTP Anda: ' + otp + '\n\nBerlaku ' + OTP_TTL_SECONDS +
-      ' detik dan hanya dapat dipakai sekali. Jangan bagikan kepada siapa pun.',
+    body: 'Halo ' + nama + ',\n\nKode OTP Anda: ' + otp + '\n\nBerlaku 3 menit (' + OTP_TTL_SECONDS +
+      ' detik) dan hanya dapat dipakai sekali. Jangan bagikan kepada siapa pun.',
     htmlBody: htmlContent
   });
 }
@@ -293,7 +293,7 @@ function buildHtml_(nama, otp) {
     '<span style="font-size:38px;font-weight:bold;letter-spacing:10px;color:#3D1203;font-family:monospace">' + otp + '</span>' +
     '</div>' +
     '<p style="font-size:12px;color:#856B5D;line-height:1.5;margin:16px 0 0">' +
-    '⚠️ Kode ini berlaku <b>' + OTP_TTL_SECONDS + ' detik</b> dan hanya dapat dipakai satu kali. ' +
+    '⚠️ Kode ini berlaku <b>3 menit (' + OTP_TTL_SECONDS + ' detik)</b> dan hanya dapat dipakai satu kali. ' +
     '<b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.' +
     '</p>' +
     '</div>' +

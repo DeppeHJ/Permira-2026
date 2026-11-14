@@ -29,54 +29,44 @@ export const DEFAULT_CONTACTS = [
   {
     id: 'cp-01',
     name: 'Helpdesk Teknis & OTP 1',
-    role: 'Kendala OTP & Verifikasi Sistem',
     phone: '0812-3456-7891',
     whatsapp: '6281234567891',
     available: '08.00 - 21.00 WIB',
-    description: 'Bantuan kendala pengiriman kode OTP, verifikasi akun, dan error teknis website.',
   },
   {
     id: 'cp-02',
     name: 'Helpdesk Teknis & OTP 2',
-    role: 'Kendala Akses & Perangkat',
     phone: '0812-3456-7892',
     whatsapp: '6281234567892',
     available: '08.00 - 21.00 WIB',
-    description: 'Bantuan kendala browser, sesi login berakhir, dan reset status pemilih terhambat.',
   },
   {
     id: 'cp-03',
     name: 'Divisi DPT & Data Pemilih Panitia',
-    role: 'Verifikasi Status DPT & Angkatan',
     phone: '0812-3456-7893',
     whatsapp: '6281234567893',
     available: '08.00 - 20.00 WIB',
-    description: 'Pengecekan NPM tidak terdaftar di DPT, penyesuaian jenjang/angkatan, dan DPT susulan.',
   },
   {
     id: 'cp-04',
     name: 'Humas & Protokoler Panitia',
-    role: 'Informasi Alur & SOP Pemilihan',
     phone: '0812-3456-7894',
     whatsapp: '6281234567894',
     available: '09.00 - 20.00 WIB',
-    description: 'Informasi umum seputar tahapan pemilihan raya, tata tertib, dan pengumuman resmi.',
   },
   {
     id: 'cp-05',
     name: 'Panitia Pengawas Pemilu (Panwaslu)',
-    role: 'Laporan Pelanggaran & Pengaduan Independen',
     phone: '0812-3456-7895',
     whatsapp: '6281234567895',
     available: '24 Jam Selama Pemilihan',
-    description: 'Saluran pengaduan independen untuk menjaga integritas dan kerahasiaan suara pemilih.',
   },
 ]
 
 /**
  * Bangun kategori pemilih per angkatan dari tahun pemilihan.
  * Format standar:
- * S1 (4 angkatan), S2 (2 angkatan), S3 (2 angkatan), Profesi, RPL (3 angkatan).
+ * S1 (4 angkatan), S2 (2 angkatan), S3 (2 angkatan), PROFESI, RPL (3 angkatan).
  * `key` dipakai sebagai ID dokumen koleksi `stats`.
  */
 export function buildAngkatan(year = DEFAULT_ELECTION.year) {
@@ -84,18 +74,18 @@ export function buildAngkatan(year = DEFAULT_ELECTION.year) {
   const yy = (offset = 0) => String((baseYear - offset) % 100).padStart(2, '0')
 
   return [
-    { key: `s1-${yy(0)}`, label: `S1 akt ${yy(0)}` },
-    { key: `s1-${yy(1)}`, label: `S1 akt ${yy(1)}` },
-    { key: `s1-${yy(2)}`, label: `S1 akt ${yy(2)}` },
-    { key: `s1-${yy(3)}`, label: `S1 akt ${yy(3)}` },
-    { key: `s2-${yy(0)}`, label: `S2 akt ${yy(0)}` },
-    { key: `s2-${yy(1)}`, label: `S2 akt ${yy(1)}` },
-    { key: `s3-${yy(0)}`, label: `S3 akt ${yy(0)}` },
-    { key: `s3-${yy(1)}`, label: `S3 akt ${yy(1)}` },
-    { key: 'profesi', label: 'Profesi' },
-    { key: `rpl-${yy(0)}`, label: `RPL akt ${yy(0)}` },
-    { key: `rpl-${yy(1)}`, label: `RPL akt ${yy(1)}` },
-    { key: `rpl-${yy(2)}`, label: `RPL akt ${yy(2)}` },
+    { key: `S1-${yy(0)}`, label: `S1-${yy(0)}` },
+    { key: `S1-${yy(1)}`, label: `S1-${yy(1)}` },
+    { key: `S1-${yy(2)}`, label: `S1-${yy(2)}` },
+    { key: `S1-${yy(3)}`, label: `S1-${yy(3)}` },
+    { key: `S2-${yy(0)}`, label: `S2-${yy(0)}` },
+    { key: `S2-${yy(1)}`, label: `S2-${yy(1)}` },
+    { key: `S3-${yy(0)}`, label: `S3-${yy(0)}` },
+    { key: `S3-${yy(1)}`, label: `S3-${yy(1)}` },
+    { key: 'PROFESI', label: 'PROFESI' },
+    { key: `RPL-${yy(0)}`, label: `RPL-${yy(0)}` },
+    { key: `RPL-${yy(1)}`, label: `RPL-${yy(1)}` },
+    { key: `RPL-${yy(2)}`, label: `RPL-${yy(2)}` },
   ]
 }
 
@@ -272,7 +262,7 @@ export const SOP_TABS = [
     rules: [
       'Gunakan peramban versi terbaru dan pastikan koneksi internet stabil.',
       'Jika OTP belum masuk, periksa folder spam/promosi lalu kirim ulang setelah jeda 30 detik.',
-      'Kode OTP kedaluwarsa dalam 90 detik; minta kode baru bila sudah habis.',
+      'Kode OTP kedaluwarsa dalam 3 menit; minta kode baru bila sudah habis.',
       'Jangan menutup halaman saat proses pengiriman suara berlangsung.',
       'Hubungi Panitia bila data Anda tidak ditemukan atau email terdaftar tidak aktif.',
     ],

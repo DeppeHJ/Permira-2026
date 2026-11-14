@@ -18,15 +18,15 @@ import { Card, ConfirmDialog, SaveBar } from './ui'
 
 const slugify = (text) =>
   String(text || '')
-    .toLowerCase()
+    .toUpperCase()
     .trim()
     .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
+    .replace(/[^A-Z0-9-]/g, '')
 
 const normalize = (items) =>
   (items || []).map((item) => ({
-    key: String(item.key || '').trim(),
-    label: String(item.label || '').trim(),
+    key: String(item.key || '').trim().toUpperCase(),
+    label: String(item.label || '').trim().toUpperCase(),
   }))
 
 export default function CategoriesPanel({ showToast }) {
@@ -63,7 +63,7 @@ export default function CategoriesPanel({ showToast }) {
   }
 
   const add = () => {
-    const defaultKey = `kat-${items.length + 1}`
+    const defaultKey = `KAT-${items.length + 1}`
     setItems((prev) => [...prev, { key: defaultKey, label: '' }])
   }
 
@@ -114,7 +114,7 @@ export default function CategoriesPanel({ showToast }) {
     }
 
     // Check duplicate keys
-    const keys = items.map((i) => i.key.trim().toLowerCase())
+    const keys = items.map((i) => i.key.trim().toUpperCase())
     const duplicates = keys.filter((k, idx) => keys.indexOf(k) !== idx)
     if (duplicates.length > 0) {
       showToast({
@@ -128,8 +128,8 @@ export default function CategoriesPanel({ showToast }) {
     setSaving(true)
     try {
       const cleaned = items.map((i) => ({
-        key: i.key.trim().toLowerCase(),
-        label: i.label.trim(),
+        key: i.key.trim().toUpperCase(),
+        label: i.label.trim().toUpperCase(),
       }))
       await saveCategories(cleaned)
       showToast({
@@ -251,17 +251,17 @@ export default function CategoriesPanel({ showToast }) {
                     <input
                       type="text"
                       value={item.label}
-                      placeholder="Contoh: S1 akt 26"
+                      placeholder="Contoh: S1-26"
                       onChange={(e) => {
-                        const newLabel = e.target.value
+                        const newLabel = e.target.value.toUpperCase()
                         // If key was auto-generated or empty, keep it updated
-                        if (!item.key || item.key.startsWith('kat-')) {
+                        if (!item.key || item.key.toUpperCase().startsWith('KAT-')) {
                           update(index, { label: newLabel, key: slugify(newLabel) })
                         } else {
                           update(index, { label: newLabel })
                         }
                       }}
-                      className={inputSingle}
+                      className={`${inputSingle} uppercase`}
                     />
                   </div>
                   <div>
@@ -271,9 +271,9 @@ export default function CategoriesPanel({ showToast }) {
                     <input
                       type="text"
                       value={item.key}
-                      placeholder="Contoh: s1-26"
+                      placeholder="Contoh: S1-26"
                       onChange={(e) => update(index, { key: slugify(e.target.value) })}
-                      className={`${inputSingle} font-mono text-sm`}
+                      className={`${inputSingle} font-mono text-sm uppercase`}
                     />
                   </div>
                 </div>
@@ -282,8 +282,8 @@ export default function CategoriesPanel({ showToast }) {
                 <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] text-gold/60 hidden lg:inline">Preview:</span>
-                    <span className="inline-flex items-center rounded-lg border border-gold/30 bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
-                      {item.label || 'Kategori'}
+                    <span className="inline-flex items-center rounded-lg border border-gold/30 bg-gold/15 px-2.5 py-1 text-xs font-bold uppercase text-gold">
+                      {item.label || 'KATEGORI'}
                     </span>
                   </div>
                   <button
@@ -311,10 +311,10 @@ export default function CategoriesPanel({ showToast }) {
       >
         <div className="space-y-2 text-xs leading-relaxed text-gold/80">
           <p>
-            • <strong>Pencocokan Cerdas:</strong> Saat mengimpor DPT via CSV/Excel, sistem akan otomatis mencocokkan nilai kolom <code className="text-gold font-mono">angkatan</code> baik berdasarkan Label tampilan (mis. <code className="text-gold font-mono">S1 akt 26</code>, <code className="text-gold font-mono">RPL akt 25</code>, <code className="text-gold font-mono">Profesi</code>) maupun Kode Sistem (mis. <code className="text-gold font-mono">s1-26</code>, <code className="text-gold font-mono">rpl-25</code>, <code className="text-gold font-mono">2026</code>).
+            • <strong>Pencocokan Cerdas:</strong> Saat mengimpor DPT via CSV/Excel, sistem akan otomatis mencocokkan nilai kolom <code className="text-gold font-mono">angkatan</code> baik berdasarkan Label tampilan (mis. <code className="text-gold font-mono">S1-26</code>, <code className="text-gold font-mono">RPL-25</code>, <code className="text-gold font-mono">PROFESI</code>) maupun variasi lainnya (mis. <code className="text-gold font-mono">s1-26</code>, <code className="text-gold font-mono">S1 akt 26</code>, <code className="text-gold font-mono">2026</code>).
           </p>
           <p>
-            • <strong>Kode Sistem:</strong> Disarankan menggunakan format huruf kecil dan tanda hubung, misalnya <code className="text-gold font-mono">s1-26</code>, <code className="text-gold font-mono">s2-25</code>, <code className="text-gold font-mono">rpl-24</code>.
+            • <strong>Format Huruf Kapital:</strong> Kategori disimpan dan ditampilkan menggunakan huruf kapital dengan tanda hubung, misalnya <code className="text-gold font-mono">S1-26</code>, <code className="text-gold font-mono">S2-25</code>, <code className="text-gold font-mono">RPL-24</code>, <code className="text-gold font-mono">PROFESI</code>.
           </p>
           <p>
             • <strong>Pembaruan Statistik:</strong> Setiap kali Anda menyimpan kategori baru atau mengubah urutan, sistem akan otomatis menyinkronkan dokumen statistik agar dashboard langsung mencerminkan data terbaru.

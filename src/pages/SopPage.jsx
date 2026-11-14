@@ -27,31 +27,31 @@ export default function SopPage({
 
   const handleProceed = () => {
     if (!agreed) return
-    onAgreeSop?.()
+    onAgreeSop?.(true)
     onNavigate('voteAI')
   }
 
   return (
-    <div className="mx-auto max-w-7xl animate-rise px-4 py-8 lg:px-8 lg:py-10">
+    <div className="mx-auto w-full max-w-7xl overflow-x-hidden animate-rise px-3.5 pt-5 pb-24 sm:px-4 sm:py-8 md:pb-10 lg:px-8 lg:py-10">
       {/* Stepper khusus jika pemilih aktif belum memilih */}
       {isVoterActive && (
-        <div className="mb-8 rounded-2xl border border-gold/25 bg-card-dark/70 p-4 sm:p-6 shadow-xl shadow-black/30">
+        <div className="mb-5 overflow-hidden rounded-2xl border border-gold/25 bg-card-dark/70 p-3 sm:mb-8 sm:p-6 shadow-xl shadow-black/30">
           <Stepper step={1} />
         </div>
       )}
 
-      <header className="mb-8">
+      <header className="mb-5 sm:mb-8">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="flex items-center gap-2 text-sm font-semibold text-accent">
-            <ScrollText className="h-4 w-4" aria-hidden="true" /> Standar Operasional Prosedur
+          <p className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-accent">
+            <ScrollText className="h-4 w-4 shrink-0" aria-hidden="true" /> Standar Operasional Prosedur
           </p>
           {isVoterActive && (
-            <span className="rounded-full border border-gold/30 bg-card-dark px-3 py-0.5 text-xs font-bold text-gold">
+            <span className="rounded-full border border-gold/30 bg-card-dark px-3 py-0.5 text-[11px] sm:text-xs font-bold text-gold">
               Tahap 1 dari 4 · Ketentuan Wajib Pemilih
             </span>
           )}
         </div>
-        <h1 className="mt-2 text-3xl font-extrabold text-gold sm:text-4xl">
+        <h1 className="mt-2 break-words text-2xl font-extrabold leading-tight text-gold sm:text-4xl">
           SOP Pemilihan {appName}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-gold/80 sm:text-base">
@@ -61,14 +61,14 @@ export default function SopPage({
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr] lg:gap-8">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-[320px_1fr] lg:gap-8">
         {/* Sidebar tab vertikal */}
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div
             role="tablist"
             aria-label="Kategori SOP"
             aria-orientation="vertical"
-            className="flex gap-2 overflow-x-auto rounded-2xl border border-gold/25 bg-card-dark p-2 lg:flex-col lg:overflow-visible"
+            className="grid grid-cols-2 gap-2 rounded-2xl border border-gold/25 bg-card-dark p-2 lg:flex lg:flex-col"
           >
             {SOP_TABS.map((tab) => {
               const isActive = tab.id === activeId
@@ -81,14 +81,14 @@ export default function SopPage({
                   aria-selected={isActive}
                   aria-controls="sop-panel"
                   onClick={() => setActiveId(tab.id)}
-                  className={`flex shrink-0 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-colors ${
+                  className={`flex min-w-0 items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold leading-snug transition-colors sm:px-4 sm:py-3 sm:text-sm ${
                     isActive
                       ? 'bg-brand text-white shadow-lg shadow-brand/30'
                       : 'text-gold/80 hover:bg-gold/10 hover:text-gold'
                   }`}
                 >
-                  {tab.label}
-                  <ChevronRight className="hidden h-4 w-4 lg:block" aria-hidden="true" />
+                  <span className="break-words">{tab.label}</span>
+                  <ChevronRight className="hidden h-4 w-4 shrink-0 lg:block" aria-hidden="true" />
                 </button>
               )
             })}
@@ -110,7 +110,11 @@ export default function SopPage({
                   type="checkbox"
                   id="check-sop-agree-desktop"
                   checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                    setAgreed(next)
+                    onAgreeSop?.(next)
+                  }}
                   className="mt-0.5 h-4 w-4 shrink-0 rounded border-gold/40 bg-bean accent-brand cursor-pointer"
                 />
                 <span>Saya telah membaca dan memahami ketentuan SOP Pemilihan ini.</span>
@@ -124,7 +128,7 @@ export default function SopPage({
                 className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-bold text-white shadow-lg shadow-brand/30 transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Vote className="h-4 w-4" aria-hidden="true" />
-                {sopAgreed ? 'Lanjut ke Voting' : 'Setuju & Lanjut Vote'}
+                {agreed ? 'Lanjut ke Voting' : 'Setuju & Lanjut Vote'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
@@ -163,27 +167,29 @@ export default function SopPage({
         </aside>
 
         {/* Daftar aturan */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-5 sm:space-y-6">
           <section
             role="tabpanel"
             id="sop-panel"
             aria-labelledby={`sop-tab-${active.id}`}
-            className="rounded-2xl border border-gold/25 bg-card-dark p-6 sm:p-8 shadow-xl shadow-black/20"
+            className="rounded-2xl border border-gold/25 bg-card-dark p-4 sm:p-8 shadow-xl shadow-black/20"
           >
-            <h2 className="text-2xl font-bold text-gold">{active.label}</h2>
-            <p className="mt-1 text-sm text-gold/70">{active.description}</p>
+            <h2 className="break-words text-xl font-bold text-gold sm:text-2xl">{active.label}</h2>
+            <p className="mt-1 break-words text-xs sm:text-sm text-gold/70">{active.description}</p>
 
-            <ol key={active.id} className="mt-6 space-y-4">
+            <ol key={active.id} className="mt-5 sm:mt-6 space-y-3 sm:space-y-4">
               {active.rules.map((rule, index) => (
                 <li
                   key={`${index}-${rule}`}
-                  className="flex animate-rise gap-4 rounded-xl border border-gold/12 bg-bean/60 p-4"
+                  className="flex min-w-0 animate-rise items-start gap-3 sm:gap-4 rounded-xl border border-gold/12 bg-bean/60 p-3.5 sm:p-4"
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-extrabold text-white">
+                  <span className="grid h-7 w-7 sm:h-9 sm:w-9 shrink-0 place-items-center rounded-full bg-brand text-xs sm:text-sm font-extrabold text-white">
                     {index + 1}
                   </span>
-                  <p className="pt-1 text-sm font-medium text-white/90 sm:text-base">{rule}</p>
+                  <p className="min-w-0 flex-1 break-words pt-0.5 sm:pt-1 text-sm leading-relaxed font-medium text-white/90 sm:text-base">
+                    {rule}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -191,12 +197,12 @@ export default function SopPage({
 
           <div
             role="note"
-            className="flex gap-4 rounded-2xl border-l-4 border-brand bg-gold p-5 text-card-dark shadow-xl shadow-black/30"
+            className="flex gap-3 sm:gap-4 rounded-2xl border-l-4 border-brand bg-gold p-4 sm:p-5 text-card-dark shadow-xl shadow-black/30"
           >
-            <Info className="mt-0.5 h-6 w-6 shrink-0 text-brand" aria-hidden="true" />
-            <div>
+            <Info className="mt-0.5 h-5 w-5 sm:h-6 sm:w-6 shrink-0 text-brand" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
               <p className="font-extrabold">Perhatian Penting</p>
-              <p className="mt-1 text-sm font-medium leading-relaxed">
+              <p className="mt-1 break-words text-xs sm:text-sm font-medium leading-relaxed">
                 Suara yang sudah dikirim bersifat anonim dan tidak dapat diubah atau ditarik kembali.
                 Pastikan pilihan Anda sudah benar sebelum memasukkan kode OTP. Jangan pernah
                 membagikan kode OTP Anda kepada siapa pun.
@@ -206,9 +212,9 @@ export default function SopPage({
 
           {/* Konfirmasi dan tombol pemilih untuk mobile / bagian bawah artikel */}
           {isVoterActive ? (
-            <div className="rounded-2xl border-2 border-gold/30 bg-card-dark p-6 shadow-xl shadow-black/30">
+            <div className="rounded-2xl border-2 border-gold/30 bg-card-dark p-4 sm:p-6 shadow-xl shadow-black/30">
               <div className="flex items-center gap-2 text-gold">
-                <ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />
+                <ShieldCheck className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
                 <h3 className="text-base font-bold sm:text-lg">Konfirmasi Membaca SOP</h3>
               </div>
               <p className="mt-2 text-xs sm:text-sm text-gold/80 leading-relaxed">
@@ -216,15 +222,19 @@ export default function SopPage({
                 SOP Pemilihan dan siap menggunakan hak suara Anda secara bijak, jujur, dan rahasia.
               </p>
 
-              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/25 bg-bean/70 p-4 transition-colors hover:border-gold/50">
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/25 bg-bean/70 p-3.5 sm:p-4 transition-colors hover:border-gold/50">
                 <input
                   type="checkbox"
                   id="check-sop-agree-mobile"
                   checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                    setAgreed(next)
+                    onAgreeSop?.(next)
+                  }}
                   className="mt-0.5 h-5 w-5 shrink-0 rounded border-gold/40 bg-bean accent-brand cursor-pointer"
                 />
-                <span className="text-xs sm:text-sm font-bold text-white">
+                <span className="min-w-0 break-words text-xs sm:text-sm font-bold leading-relaxed text-white">
                   Saya telah membaca, memahami, dan menyetujui seluruh ketentuan SOP Pemilihan di atas.
                 </span>
               </label>
@@ -234,11 +244,11 @@ export default function SopPage({
                 id="btn-agree-sop-mobile"
                 onClick={handleProceed}
                 disabled={!agreed}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-bold text-white shadow-lg shadow-brand/30 transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-4 sm:mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-bold text-white shadow-lg shadow-brand/30 transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Vote className="h-5 w-5" aria-hidden="true" />
-                {sopAgreed ? 'Lanjut ke Bilik Suara (Voting)' : 'Setuju & Lanjut Memilih (Tahap 2)'}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                <Vote className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span>{agreed ? 'Lanjut ke Bilik Suara (Voting)' : 'Setuju & Lanjut Memilih (Tahap 2)'}</span>
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
               </button>
             </div>
           ) : voter?.hasVoted ? (

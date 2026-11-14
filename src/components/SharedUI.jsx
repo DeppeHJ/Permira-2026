@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   AlertTriangle,
   BadgeCheck,
@@ -75,15 +76,15 @@ export function CandidatePhoto({ src, alt = '', className = '' }) {
 
 const NAV_ITEMS_DEFAULT = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
-  { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'] },
-  { id: 'sop', label: 'SOP', icon: ScrollText, matches: ['sop'] },
   { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
+  { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'], isCta: true },
+  { id: 'sop', label: 'SOP', icon: ScrollText, matches: ['sop'] },
 ]
 
 const NAV_ITEMS_VOTED = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
-  { id: 'sop', label: 'SOP Pemilihan', icon: ScrollText, matches: ['sop'] },
   { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
+  { id: 'sop', label: 'SOP Pemilihan', icon: ScrollText, matches: ['sop'] },
 ]
 
 export function TopNav({ current, onNavigate, onLogout, voter }) {
@@ -92,7 +93,7 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
   return (
     <>
       <header className="sticky top-0 z-40 h-[72px] border-b border-gold/12 bg-bean/95 backdrop-blur md:h-[76px]">
-        <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-4 lg:px-8">
+        <div className="relative mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
           <button
             type="button"
             onClick={() => onNavigate('dashboard')}
@@ -102,9 +103,21 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
             <BrandLogo />
           </button>
 
-          <nav aria-label="Navigasi utama" className="hidden items-center gap-2 md:flex">
-            {items.map(({ id, label, icon: Icon, matches }) => {
+          <nav
+            aria-label="Navigasi utama"
+            className="hidden items-center gap-1.5 md:absolute md:left-1/2 md:-translate-x-1/2 md:flex lg:gap-2"
+          >
+            {items.map(({ id, label, icon: Icon, matches, isCta }) => {
               const active = matches.includes(current)
+              const buttonClass = isCta
+                ? `flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold via-amber-300 to-accent px-5 py-2.5 text-sm font-extrabold text-card-dark shadow-lg shadow-accent/40 ring-2 transition-all hover:brightness-110 hover:scale-105 ${
+                    active ? 'ring-white scale-105 shadow-xl shadow-gold/50' : 'ring-gold/80'
+                  }`
+                : `flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors lg:px-4 ${
+                    active
+                      ? 'bg-brand text-white shadow-lg shadow-brand/30'
+                      : 'text-gold/80 hover:bg-gold/10 hover:text-gold'
+                  }`
               return (
                 <button
                   key={id}
@@ -112,14 +125,10 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
                   id={`nav-${id}`}
                   onClick={() => onNavigate(id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
-                    active
-                      ? 'bg-brand text-white shadow-lg shadow-brand/30'
-                      : 'text-gold/80 hover:bg-gold/10 hover:text-gold'
-                  }`}
+                  className={buttonClass}
                 >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  {label}
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{label}</span>
                 </button>
               )
             })}
@@ -159,8 +168,24 @@ export function TopNav({ current, onNavigate, onLogout, voter }) {
                 : 'grid-cols-5'
         }`}
       >
-        {items.map(({ id, label, icon: Icon, matches }) => {
+        {items.map(({ id, label, icon: Icon, matches, isCta }) => {
           const active = matches.includes(current)
+          if (isCta) {
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onNavigate(id)}
+                aria-current={active ? 'page' : undefined}
+                className={`my-1 mx-1 flex flex-col items-center justify-center gap-0.5 rounded-xl bg-gradient-to-r from-gold via-amber-300 to-accent text-[11px] font-extrabold text-card-dark shadow-md shadow-accent/30 ring-1 transition-all ${
+                  active ? 'ring-white brightness-110' : 'ring-gold/80'
+                }`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            )
+          }
           return (
             <button
               key={id}
@@ -339,7 +364,7 @@ export function CandidateCard({ candidate, selected, onShowDetail, onChoose }) {
         <CandidatePhoto
           src={candidate.photo}
           alt={`Foto ${candidate.name}`}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+          className="h-full w-full object-cover object-top transition-transform duration-500 hover:scale-105"
         />
       </div>
 
@@ -405,9 +430,9 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
 
   if (!candidate) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/75 p-0 backdrop-blur-md sm:items-center sm:p-6"
+      className="fixed inset-0 z-[70] flex animate-fade-in items-center justify-center bg-black/75 p-3 backdrop-blur-md sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -416,17 +441,17 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="candidate-modal-title"
-        className="flex max-h-[92vh] w-full max-w-2xl animate-modal-in flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl shadow-black/60 sm:rounded-2xl"
+        className="flex max-h-[88dvh] w-full max-w-2xl animate-modal-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/60"
       >
-        <div className="flex items-center gap-4 bg-brand px-5 py-4 text-white">
-          <span className="rounded-lg bg-white px-3 py-1 text-lg font-extrabold text-brand">
+        <div className="flex shrink-0 items-center gap-4 bg-brand px-5 py-4 text-white">
+          <span className="shrink-0 rounded-lg bg-white px-3 py-1 text-lg font-extrabold text-brand">
             {candidate.number}
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
               Visi &amp; Misi
             </p>
-            <h2 id="candidate-modal-title" className="truncate text-lg font-extrabold sm:text-xl">
+            <h2 id="candidate-modal-title" className="text-base font-extrabold leading-snug sm:text-xl">
               {candidate.name}
             </h2>
           </div>
@@ -434,28 +459,28 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="rounded-xl p-2 transition-colors hover:bg-white/15"
+            className="shrink-0 rounded-xl p-2 transition-colors hover:bg-white/15"
             aria-label="Tutup"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto p-6 text-ink">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-5 text-ink sm:p-6">
           <div className="flex items-center gap-4">
             <CandidatePhoto
               src={candidate.photo}
-              className="h-20 w-20 shrink-0 rounded-xl border border-amber-200 object-cover"
+              className="h-20 w-20 shrink-0 rounded-xl border border-amber-200 object-cover object-top"
             />
-            <div>
+            <div className="min-w-0">
               <p className="font-bold text-brand">{candidate.role}</p>
-              <p className="text-sm text-ink-soft">{candidate.study}</p>
+              <p className="text-sm text-ink-soft break-words">{candidate.study}</p>
             </div>
           </div>
 
           <section>
             <h3 className="mb-2 text-lg font-bold text-brand">Visi</h3>
-            <blockquote className="rounded-xl border-l-4 border-brand bg-amber-50 p-4 text-base font-medium italic">
+            <blockquote className="break-words whitespace-pre-line rounded-xl border-l-4 border-brand bg-amber-50 p-4 text-base font-medium italic">
               “{candidate.visi}”
             </blockquote>
           </section>
@@ -464,11 +489,13 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
             <h3 className="mb-3 text-lg font-bold text-brand">Misi</h3>
             <ol className="space-y-2.5">
               {candidate.misi.map((item, index) => (
-                <li key={item} className="flex gap-3 text-sm">
+                <li key={`${index}-${item}`} className="flex gap-3 text-sm">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand text-xs font-extrabold text-white">
                     {index + 1}
                   </span>
-                  <span className="pt-0.5 text-ink-soft">{item}</span>
+                  <span className="min-w-0 flex-1 break-words whitespace-pre-line pt-0.5 text-ink-soft">
+                    {item}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -477,10 +504,10 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
           <section>
             <h3 className="mb-3 text-lg font-bold text-brand">Program Prioritas</h3>
             <ul className="flex flex-wrap gap-2">
-              {candidate.programs.map((program) => (
+              {candidate.programs.map((program, index) => (
                 <li
-                  key={program}
-                  className="rounded-full border border-brand/30 bg-amber-50 px-3 py-1 text-xs font-bold text-brand"
+                  key={`${index}-${program}`}
+                  className="break-words rounded-full border border-brand/30 bg-amber-50 px-3 py-1 text-xs font-bold text-brand"
                 >
                   {program}
                 </li>
@@ -489,7 +516,7 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
           </section>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 border-t border-amber-200/60 bg-white p-4">
+        <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-amber-200/60 bg-white p-4">
           <button
             type="button"
             onClick={onClose}
@@ -515,6 +542,7 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

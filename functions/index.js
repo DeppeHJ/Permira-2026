@@ -22,7 +22,7 @@ const resend = new Resend(RESEND_API_KEY)
 const SENDER_EMAIL = process.env.RESEND_SENDER_EMAIL || 'onboarding@resend.dev'
 const SENDER_NAME = process.env.RESEND_SENDER_NAME || 'Panitia PERMIRA 2026'
 
-const OTP_TTL_SECONDS = 90
+const OTP_TTL_SECONDS = 180
 const RESEND_COOLDOWN_MS = 25 * 1000
 const MAX_ATTEMPTS = 5
 
@@ -57,7 +57,7 @@ function buildHtml(nama, otp) {
             <span style="font-size: 38px; font-weight: bold; letter-spacing: 10px; color: #3D1203; font-family: monospace;">${otp}</span>
           </div>
           <p style="font-size: 12px; color: #856B5D; line-height: 1.5; margin: 16px 0 0;">
-            ⚠️ Kode ini berlaku <b>${OTP_TTL_SECONDS} detik</b> dan hanya dapat dipakai satu kali. 
+            ⚠️ Kode ini berlaku <b>3 menit (${OTP_TTL_SECONDS} detik)</b> dan hanya dapat dipakai satu kali. 
             <b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.
           </p>
         </div>

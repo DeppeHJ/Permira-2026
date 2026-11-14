@@ -94,7 +94,7 @@ export default function ContactPage({ onBack, onNavigate }) {
             const isCopied = copiedId === contact.id
             const waNumber = String(contact.whatsapp || '').replace(/[^0-9]/g, '')
             const defaultMsg = encodeURIComponent(
-              `Halo Panitia ${appName}, saya ingin bertanya terkait pemilihan (${contact.role}).`,
+              `Halo Panitia ${appName}, saya ingin bertanya terkait pemilihan.`,
             )
             const waUrl = `https://wa.me/${waNumber}?text=${defaultMsg}`
 
@@ -104,32 +104,19 @@ export default function ContactPage({ onBack, onNavigate }) {
                 className="group flex flex-col justify-between rounded-2xl border border-gold/25 bg-card-dark p-5 shadow-xl shadow-black/30 transition-all hover:-translate-y-1 hover:border-gold/50"
               >
                 <div>
-                  {/* Top Badge: Role & Order */}
                   <div className="flex items-start justify-between gap-2">
-                    <span className="inline-block rounded-md border border-gold/30 bg-gold/15 px-2.5 py-1 text-[11px] font-bold text-gold">
-                      {contact.role || 'Narahubung'}
-                    </span>
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-bean/60 text-xs font-bold text-gold/70">
+                    <h3 className="text-lg font-extrabold text-white transition-colors group-hover:text-gold">
+                      {contact.name}
+                    </h3>
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-bean/60 text-xs font-bold text-gold/70">
                       {index + 1}
                     </span>
                   </div>
 
-                  {/* Name & Availability */}
-                  <h3 className="mt-3 text-lg font-extrabold text-white transition-colors group-hover:text-gold">
-                    {contact.name}
-                  </h3>
-
                   {contact.available && (
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-gold/70">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gold/70">
                       <Clock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                       <span>{contact.available}</span>
-                    </p>
-                  )}
-
-                  {/* Description */}
-                  {contact.description && (
-                    <p className="mt-2.5 text-xs leading-relaxed text-gold/80">
-                      {contact.description}
                     </p>
                   )}
                 </div>
@@ -195,8 +182,8 @@ export default function ContactPage({ onBack, onNavigate }) {
             <h3 className="font-bold text-sm text-gold">OTP tidak masuk ke email UI?</h3>
             <p className="mt-1 text-xs leading-relaxed text-gold/80">
               Periksa folder <strong>Spam / Promosi</strong> di akun email kampus Anda. Kode OTP berlaku
-              selama 90 detik. Jika belum masuk, tunggu hitung mundur selesai lalu klik{' '}
-              <em>Kirim Ulang OTP</em> atau hubungi Narahubung Teknis di atas.
+              selama 3 menit dan hanya dapat dipakai sekali. Jika belum masuk, tunggu hitung mundur
+              selesai lalu klik <em>Kirim Ulang OTP</em> atau hubungi Narahubung di atas.
             </p>
           </div>
 

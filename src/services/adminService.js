@@ -52,7 +52,7 @@ export function subscribeDpt(onData, onError) {
           npm: d.id,
           nama: data.nama,
           email: data.email,
-          angkatan: data.angkatan,
+          angkatan: String(data.angkatan || '').toUpperCase(),
           hasVoted: data.hasVoted === true,
           votedAt: data.votedAt?.toDate ? data.votedAt.toDate() : null,
         }
@@ -95,14 +95,24 @@ const chunk = (items, size) => {
  * Dipakai setelah impor, reset, dan oleh tombol "Sinkronkan Statistik".
  */
 export async function syncStats(records, angkatanList = DEFAULT_ANGKATAN) {
-  const totals = new Map(angkatanList.map((a) => [a.key, { total: 0, voted: 0 }]))
+  const normalizedList = angkatanList.map((a) => ({
+    ...a,
+    key: String(a.key || '').trim().toUpperCase(),
+    label: String(a.label || a.key || '').trim().toUpperCase(),
+  }))
+
+  const totals = new Map(normalizedList.map((a) => [a.key, { total: 0, voted: 0 }]))
   for (const record of records) {
-    let entry = totals.get(record.angkatan)
-    if (!entry && record.angkatan) {
-      const match = angkatanList.find(
+    const recUpper = String(record.angkatan || '').trim().toUpperCase()
+    const recLower = recUpper.toLowerCase()
+    let entry = totals.get(recUpper)
+    if (!entry && recUpper) {
+      const match = normalizedList.find(
         (a) =>
-          a.label === record.angkatan ||
-          a.label.toLowerCase() === String(record.angkatan).toLowerCase(),
+          a.key.toLowerCase() === recLower ||
+          a.label.toLowerCase() === recLower ||
+          a.key === recUpper ||
+          a.label === recUpper,
       )
       if (match) entry = totals.get(match.key)
     }
@@ -116,7 +126,7 @@ export async function syncStats(records, angkatanList = DEFAULT_ANGKATAN) {
   existing.forEach((d) => {
     if (!totals.has(d.id)) batch.delete(d.ref)
   })
-  angkatanList.forEach((angkatan, order) => {
+  normalizedList.forEach((angkatan, order) => {
     const { total, voted } = totals.get(angkatan.key)
     batch.set(doc(db, 'stats', angkatan.key), { label: angkatan.label, order, total, voted })
   })
@@ -169,7 +179,7 @@ export function downloadAttendanceReport(records, appName = 'PERMIRA 2026') {
       r.npm,
       r.nama,
       r.email,
-      r.angkatan,
+      String(r.angkatan || '').toUpperCase(),
       r.hasVoted ? 'Sudah Memilih' : 'Belum Memilih',
       r.votedAt ? r.votedAt.toLocaleString('id-ID') : '',
     ])
@@ -179,14 +189,19 @@ export function downloadAttendanceReport(records, appName = 'PERMIRA 2026') {
 
 /** Unduh templat CSV DPT (contoh angkatan mengikuti daftar angkatan aktif). */
 export function downloadDptTemplate(angkatanList = DEFAULT_ANGKATAN, appName = 'PERMIRA 2026') {
-  const [first, second] = angkatanList
-  const yy = (key) => String(key).slice(-2)
+  const first = angkatanList[0] || { key: 'S1-26' }
+  const second = angkatanList[1] || { key: 'S1-25' }
+  const prof = angkatanList.find((a) => String(a.key).toUpperCase().includes('PROF')) || angkatanList[2] || { key: 'PROFESI' }
+  const yy = (key) => {
+    const m = String(key).match(/(\d{2})$/)
+    return m ? m[1] : '26'
+  }
   const csv = toCsv(
     ['npm', 'nama', 'email', 'angkatan'],
     [
-      [`${yy(first.key)}02010001`, 'Contoh Mahasiswa Satu', 'contoh1@kampus.ac.id', first.key],
-      [`${yy(second.key)}01020002`, 'Contoh Mahasiswa Dua', 'contoh2@kampus.ac.id', second.key],
-      ['2303030003', 'Contoh Mahasiswa Magister', 'contoh3@kampus.ac.id', 'Magister'],
+      [`${yy(first.key)}02010001`, 'Contoh Mahasiswa Satu', 'contoh1@kampus.ac.id', String(first.key).toUpperCase()],
+      [`${yy(second.key)}01020002`, 'Contoh Mahasiswa Dua', 'contoh2@kampus.ac.id', String(second.key).toUpperCase()],
+      ['2303030003', 'Contoh Mahasiswa Profesi', 'contoh3@kampus.ac.id', String(prof.key).toUpperCase()],
     ],
   )
   downloadCsv(`template-dpt-${slugify(appName)}.csv`, csv)

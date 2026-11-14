@@ -98,7 +98,18 @@ export default function ElectionProvider({ children }) {
           ? electionDoc.categories
           : null
 
-    const angkatan = rawCategories || buildAngkatan(year, angkatanCount)
+    const normalizeCategory = (item) => {
+      const formatText = (val) =>
+        String(val || '')
+          .trim()
+          .toUpperCase()
+          .replace(/\s+AKT\s+/g, '-')
+      const key = formatText(item?.key || item?.label)
+      const label = formatText(item?.label || item?.key)
+      return { ...item, key, label }
+    }
+
+    const angkatan = (rawCategories || buildAngkatan(year, angkatanCount)).map(normalizeCategory)
 
     const contacts =
       Array.isArray(contactsDoc?.items) && contactsDoc.items.length > 0

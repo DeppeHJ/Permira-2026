@@ -93,6 +93,7 @@ export default function App() {
   const [voter, setVoter] = useState(() => readSession().voter || null)
   const [selections, setSelections] = useState(() => readSession().selections || {})
   const [sopAgreed, setSopAgreed] = useState(() => Boolean(readSession().sopAgreed))
+  const sopAgreedRef = useRef(sopAgreed)
   const [page, setPage] = useState(getInitialPage)
 
   const [stats, setStats] = useState({})
@@ -154,7 +155,7 @@ export default function App() {
         }
 
         // Alur voting: pemilih wajib membaca dan menyetujui SOP terlebih dahulu
-        if (!sopAgreed && ['voting', 'voteAI', 'voteKabem', 'review'].includes(mappedPage)) {
+        if (!(sopAgreed || sopAgreedRef.current) && ['voting', 'voteAI', 'voteKabem', 'review'].includes(mappedPage)) {
           window.location.hash = '#/sop'
           setPage('sop')
           showToast({
@@ -171,6 +172,7 @@ export default function App() {
             : 'voteAI'
           window.location.hash = PAGE_TO_HASH[targetVotingPage] || '#/vote-ai'
           setPage(targetVotingPage)
+          window.scrollTo(0, 0)
           return
         }
 
@@ -179,11 +181,12 @@ export default function App() {
           const fallback = selections.aiId ? 'voteKabem' : 'voteAI'
           window.location.hash = PAGE_TO_HASH[fallback]
           setPage(fallback)
+          window.scrollTo(0, 0)
           return
         }
 
         setPage(mappedPage)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        window.scrollTo(0, 0)
       }
     }
 
@@ -203,13 +206,16 @@ export default function App() {
   const resetVoterState = useCallback(() => {
     setVoter(null)
     setSelections({})
+    sopAgreedRef.current = false
     setSopAgreed(false)
     setPage('dashboard')
     restoredRef.current = false
   }, [])
 
-  const handleAgreeSop = useCallback(() => {
-    setSopAgreed(true)
+  const handleAgreeSop = useCallback((agreed = true) => {
+    const next = Boolean(agreed)
+    sopAgreedRef.current = next
+    setSopAgreed(next)
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -272,7 +278,7 @@ export default function App() {
           message: 'Anda sudah menggunakan hak suara dan hanya dapat melihat dashboard statistik.',
         })
         resolvedTarget = 'dashboard'
-      } else if (!sopAgreed && ['voting', 'voteAI', 'voteKabem', 'review'].includes(resolvedTarget)) {
+      } else if (!(sopAgreed || sopAgreedRef.current) && ['voting', 'voteAI', 'voteKabem', 'review'].includes(resolvedTarget)) {
         showToast({
           type: 'info',
           title: 'Wajib Baca SOP Terlebih Dahulu',
@@ -295,7 +301,7 @@ export default function App() {
       if (window.location.hash !== targetHash) {
         window.location.hash = targetHash
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      window.scrollTo(0, 0)
     },
     [activeVoter, selections, sopAgreed, showToast],
   )
@@ -310,6 +316,8 @@ export default function App() {
       const data = await loginVoter({ identity, npm })
       setVoter(data)
       setSelections({})
+      sopAgreedRef.current = false
+      setSopAgreed(false)
       setPage('dashboard')
       window.location.hash = '#/dashboard'
       restoredRef.current = true
@@ -326,7 +334,8 @@ export default function App() {
     showToast({
       type: 'mail',
       title: 'Kode OTP terkirim',
-      message: 'Periksa email terdaftar Anda (termasuk folder spam). Kode berlaku 90 detik.',
+      message:
+        'Periksa email terdaftar Anda (termasuk folder spam). Kode berlaku 3 menit dan hanya dapat dipakai sekali.',
       duration: 7000,
     })
   }
@@ -459,6 +468,7 @@ export default function App() {
     } else if (page === 'voteAI') {
       screen = (
         <VotingPage
+          key="voteAI"
           type="ai"
           selections={selections}
           onSelect={handleSelect}
@@ -469,6 +479,7 @@ export default function App() {
     } else if (page === 'voteKabem') {
       screen = (
         <VotingPage
+          key="voteKabem"
           type="kabem"
           selections={selections}
           onSelect={handleSelect}

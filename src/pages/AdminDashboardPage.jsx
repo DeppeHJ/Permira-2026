@@ -644,7 +644,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
                   <tr key={r.npm} className="border-b border-gold/12 text-white/90">
                     <td className="py-3 pr-4 font-mono text-gold">{r.npm}</td>
                     <td className="py-3 pr-4">{r.nama}</td>
-                    <td className="py-3 pr-4">{r.angkatan}</td>
+                    <td className="py-3 pr-4">{String(r.angkatan || '').toUpperCase()}</td>
                     <td className="py-3 pr-4">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-bold ${
