@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { CalendarCog, Download, Trash2, TriangleAlert } from 'lucide-react'
 import { Spinner } from '../../components/SharedUI'
 import { useElection } from '../../context/electionContext'
-import { buildAngkatan } from '../../data'
+import { buildAngkatan, buildDefaultDescription } from '../../data'
 import {
   downloadElectionBackup,
   resetElectionData,
   resyncStatsFromDpt,
   saveElectionSettings,
 } from '../../services/superAdminService'
-import { btnDanger, btnGhost, btnPrimary, inputSingle } from './styles'
+import { btnDanger, btnGhost, btnPrimary, inputSingle, textareaClass } from './styles'
 import { Card, ConfirmDialog, Field } from './ui'
 
 const STEPS = [
@@ -25,6 +25,7 @@ export default function ElectionSettingsPanel({ showToast }) {
   const [name, setName] = useState(election.name)
   const [year, setYear] = useState(String(election.year))
   const [count, setCount] = useState(String(election.angkatanCount))
+  const [description, setDescription] = useState(election.description)
   const [saving, setSaving] = useState(false)
 
   const [resetOpts, setResetOpts] = useState({ dpt: true, votes: true })
@@ -38,7 +39,8 @@ export default function ElectionSettingsPanel({ showToast }) {
   const dirty =
     name.trim() !== election.name ||
     yearNumber !== election.year ||
-    countNumber !== election.angkatanCount
+    countNumber !== election.angkatanCount ||
+    description.trim() !== election.description
 
   const previewAngkatan =
     Number.isInteger(yearNumber) && yearNumber >= 2000 ? buildAngkatan(yearNumber, countNumber) : []
@@ -46,6 +48,7 @@ export default function ElectionSettingsPanel({ showToast }) {
   const handleSave = async (event) => {
     event.preventDefault()
     const cleanName = name.trim()
+    const cleanDescription = description.trim()
     if (cleanName.length < 2 || cleanName.length > 60) {
       showToast({ type: 'error', title: 'Nama tidak valid', message: 'Nama pemilihan 2–60 karakter.' })
       return
@@ -58,11 +61,24 @@ export default function ElectionSettingsPanel({ showToast }) {
       showToast({ type: 'error', title: 'Jumlah angkatan tidak valid', message: 'Pilih 1 sampai 8 angkatan.' })
       return
     }
+    if (cleanDescription.length < 10 || cleanDescription.length > 500) {
+      showToast({
+        type: 'error',
+        title: 'Deskripsi tidak valid',
+        message: 'Deskripsi sambutan harus 10–500 karakter.',
+      })
+      return
+    }
 
     setSaving(true)
     try {
       const angkatanChanged = yearNumber !== election.year || countNumber !== election.angkatanCount
-      await saveElectionSettings({ name: cleanName, year: yearNumber, angkatanCount: countNumber })
+      await saveElectionSettings({
+        name: cleanName,
+        year: yearNumber,
+        angkatanCount: countNumber,
+        description: cleanDescription,
+      })
       if (angkatanChanged) await resyncStatsFromDpt(buildAngkatan(yearNumber, countNumber))
       showToast({
         type: 'success',
@@ -147,7 +163,7 @@ export default function ElectionSettingsPanel({ showToast }) {
     <div className="space-y-6">
       <Card
         icon={CalendarCog}
-        title="Tahun & Nama Pemilihan"
+        title="Tahun, Nama & Deskripsi Sambutan"
         description="Mengubah tahun akan memperbarui judul di seluruh halaman dan daftar kategori angkatan (4 angkatan terbaru + Magister + Pascasarjana)."
       >
         <form onSubmit={handleSave} className="grid gap-5 sm:grid-cols-3">
@@ -199,9 +215,39 @@ export default function ElectionSettingsPanel({ showToast }) {
             </p>
           </div>
 
+          <Field
+            label="Deskripsi sambutan dashboard"
+            htmlFor="set-description"
+            hint="Tampil di bagian atas (hero banner) halaman Dashboard pemilih."
+            className="sm:col-span-3"
+          >
+            <textarea
+              id="set-description"
+              rows={3}
+              maxLength={500}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className={textareaClass}
+            />
+            <div className="mt-1.5 flex items-center justify-between text-xs text-gold/60">
+              <button
+                type="button"
+                onClick={() =>
+                  setDescription(
+                    buildDefaultDescription(`${name.trim() || election.name} ${year || election.year}`),
+                  )
+                }
+                className="font-semibold text-gold/80 underline-offset-2 hover:text-gold hover:underline"
+              >
+                Gunakan teks bawaan
+              </button>
+              <span>{description.length}/500</span>
+            </div>
+          </Field>
+
           <div className="sm:col-span-3">
             <button type="submit" id="btn-save-settings" disabled={!dirty || saving} className={btnPrimary}>
-              {saving && <Spinner className="h-4 w-4" />} Simpan Tahun & Nama
+              {saving && <Spinner className="h-4 w-4" />} Simpan Pengaturan
             </button>
           </div>
         </form>

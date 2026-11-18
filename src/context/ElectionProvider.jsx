@@ -10,6 +10,7 @@ import {
   SOP_TABS,
   VOTING_STEPS,
   buildAngkatan,
+  buildDefaultDescription,
 } from '../data'
 import { normalizeCandidate, sortCandidates } from '../utils/candidates'
 import { ElectionContext } from './electionContext'
@@ -21,7 +22,7 @@ const DEFAULT_CANDIDATES = [...AI_CANDIDATES, ...KABEM_CANDIDATES]
 
 /**
  * Menyediakan data pemilihan yang bisa diubah Super Admin:
- *  - `config/election`    { name, year, angkatanCount, candidatesSeeded }
+ *  - `config/election`    { name, year, angkatanCount, description, candidatesSeeded }
  *  - `config/categories`  { items: [...] }
  *  - `config/contacts`    { items: [...] }
  *  - `config/timeline`    { items: [...] }
@@ -89,6 +90,9 @@ export default function ElectionProvider({ children }) {
   const year = Number(electionDoc?.year) || DEFAULT_ELECTION.year
   const angkatanCount = Number(electionDoc?.angkatanCount) || DEFAULT_ELECTION.angkatanCount
   const candidatesSeeded = electionDoc?.candidatesSeeded === true
+  const appName = `${name} ${year}`
+  const rawDescription = electionDoc?.description?.trim()
+  const description = rawDescription || buildDefaultDescription(appName)
 
   const value = useMemo(() => {
     const rawCategories =
@@ -131,7 +135,8 @@ export default function ElectionProvider({ children }) {
       name,
       year,
       angkatanCount,
-      appName: `${name} ${year}`,
+      appName,
+      description,
       angkatan,
       contacts,
       timeline,
@@ -152,6 +157,8 @@ export default function ElectionProvider({ children }) {
     name,
     year,
     angkatanCount,
+    appName,
+    description,
     candidatesSeeded,
     candidateDocs,
     timelineDoc,

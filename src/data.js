@@ -19,8 +19,18 @@ export const COLORS = {
   textDark: '#1F110B',
 }
 
+/** Deskripsi sambutan bawaan pada hero banner Dashboard pemilih. */
+export function buildDefaultDescription(appName = 'PEMIRA IKM FIK UI 2026') {
+  return `Selamat datang di ${appName}. Gunakan hak suara Anda untuk memilih Anggota Independen dan Ketua/Wakil Ketua BEM. Pilihan Anda rahasia dan menentukan arah kampus.`
+}
+
 /** Pengaturan pemilihan bawaan. Super Admin dapat menimpanya lewat `config/election`. */
-export const DEFAULT_ELECTION = { name: 'PEMIRA IKM FIK UI', year: 2026, angkatanCount: 4 }
+export const DEFAULT_ELECTION = {
+  name: 'PEMIRA IKM FIK UI',
+  year: 2026,
+  angkatanCount: 4,
+  description: buildDefaultDescription('PEMIRA IKM FIK UI 2026'),
+}
 
 export const APP_NAME = `${DEFAULT_ELECTION.name} ${DEFAULT_ELECTION.year}`
 

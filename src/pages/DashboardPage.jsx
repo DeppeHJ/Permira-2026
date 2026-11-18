@@ -87,7 +87,7 @@ function TotalDonutTooltip({ active, payload }) {
 }
 
 export default function DashboardPage({ voter, stats, statsReady, onNavigate }) {
-  const { angkatan, timeline, appName } = useElection()
+  const { angkatan, timeline, description } = useElection()
   const [filter, setFilter] = useState('ALL')
   const [pieMetric, setPieMetric] = useState('voted') // 'voted' | 'pct'
 
@@ -202,9 +202,8 @@ export default function DashboardPage({ voter, stats, statsReady, onNavigate }) 
             <h1 id="hero-title" className="mt-4 text-3xl font-extrabold text-white sm:text-5xl">
               Halo, {firstName(voter.nama)}!
             </h1>
-            <p className="mt-3 max-w-2xl text-base font-medium text-white/90">
-              Selamat datang di {appName}. Gunakan hak suara Anda untuk memilih Anggota
-              Independen dan Ketua/Wakil Ketua BEM. Pilihan Anda rahasia dan menentukan arah kampus.
+            <p className="mt-3 max-w-2xl whitespace-pre-line text-base font-medium text-white/90">
+              {description}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               {voter.hasVoted ? (

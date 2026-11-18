@@ -29,12 +29,12 @@ const chunk = (items, size) => {
 /* Tahun & nama pemilihan                                                     */
 /* -------------------------------------------------------------------------- */
 
-export async function saveElectionSettings({ name, year, angkatanCount }) {
-  await setDoc(
-    doc(db, 'config', 'election'),
-    { name, year, angkatanCount, updatedAt: serverTimestamp() },
-    { merge: true },
-  )
+export async function saveElectionSettings({ name, year, angkatanCount, description }) {
+  const payload = { name, year, angkatanCount, updatedAt: serverTimestamp() }
+  if (typeof description === 'string') {
+    payload.description = description
+  }
+  await setDoc(doc(db, 'config', 'election'), payload, { merge: true })
 }
 
 /* -------------------------------------------------------------------------- */
