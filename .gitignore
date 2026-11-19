@@ -35,3 +35,7 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+

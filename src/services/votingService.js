@@ -46,6 +46,7 @@ export async function loginVoter({ identity, npm }) {
       !data ||
       (normalizeText(data.email) !== cleanIdentity && normalizeText(data.nama) !== cleanIdentity)
     ) {
+      await signOut(auth).catch(() => {})
       throw new Error('Data tidak ditemukan di DPT atau tidak cocok. Periksa kembali Email/Nama dan NPM Anda.')
     }
 

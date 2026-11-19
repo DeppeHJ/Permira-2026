@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "permira-otp-worker",
+  "main": "src/index.js",
+  "compatibility_date": "2026-03-01",
+  "vars": {
+    "FIREBASE_PROJECT_ID": "permira-ui",
+    "ZOHO_API_URL": "https://cpaas.zoho.com/v1.1/email",
+    "SENDER_EMAIL": "noreply@pemira-fikui.my.id",
+    "SENDER_NAME": "Panitia PERMIRA 2026",
+    "ALLOWED_EMAIL_DOMAIN": ""
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "OTP_SESSIONS",
+        "class_name": "OtpSession"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["OtpSession"]
+    }
+  ]
+}

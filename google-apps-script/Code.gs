@@ -3,9 +3,9 @@
  *
  * Pemasangan:
  *  1. script.google.com > Proyek baru > tempel kode ini di Code.gs.
- *  2. (Opsional, disarankan) Isi DPT_SPREADSHEET_ID agar email tujuan OTP dicocokkan
- *     dengan DPT milik panitia (bukan dipercaya dari browser). Sheet bernama "DPT"
- *     dengan header baris 1: npm | nama | email  (format sama dengan CSV DPT).
+ *  2. Pastikan FIREBASE_PROJECT_ID sesuai proyek Firebase Anda (default: 'permira-ui')
+ *     agar email tujuan OTP diverifikasi langsung dari koleksi `dpt` di Firestore via idToken.
+ *     (Atau isi DPT_SPREADSHEET_ID jika ingin mencocokkan lewat Google Sheet "DPT").
  *  3. Terapkan > Deployment baru > Jenis: Aplikasi web
  *       - Jalankan sebagai: Saya (pemilik)
  *       - Yang memiliki akses: Siapa saja
@@ -13,8 +13,8 @@
  *  5. Setiap mengubah kode, buat deployment versi baru.
  *
  * Protokol (POST, Content-Type: text/plain;charset=utf-8, body JSON):
- *  - { action: 'send',   npm, nama, email } -> { success, message }
- *  - { action: 'verify', npm, otp }         -> { success, message }
+ *  - { action: 'send',   npm, idToken } -> { success, message }
+ *  - { action: 'verify', npm, otp }     -> { success, message }
  *
  * Keamanan:
  *  - Kode OTP dibuat di server, TIDAK pernah dikembalikan ke browser.
@@ -30,8 +30,11 @@
 var OTP_TTL_SECONDS = 180;       // harus sama dengan OTP_TTL_SECONDS di src/config.js
 var RESEND_COOLDOWN_SECONDS = 25; // sedikit lebih kecil dari jeda di klien (30 dtk)
 var MAX_ATTEMPTS = 5;
+var MAX_SENDS_PER_WINDOW = 5;    // maksimal kirim OTP per NPM dalam 6 jam
+var SEND_WINDOW_SECONDS = 21600; // 6 jam (batas maksimum CacheService GAS)
 var SENDER_NAME = 'Panitia PERMIRA 2026';
-var DPT_SPREADSHEET_ID = '';      // opsional: ID Google Sheet berisi DPT
+var FIREBASE_PROJECT_ID = 'permira-ui'; // verifikasi DPT langsung via Firestore REST API + idToken
+var DPT_SPREADSHEET_ID = '';      // opsional: jika diisi, verifikasi dari Google Sheet "DPT"
 var DPT_SHEET_NAME = 'DPT';
 var ALLOWED_EMAIL_DOMAIN = '';    // opsional, mis. 'kampus.ac.id' (kosongkan untuk semua domain)
 // =========================================================
@@ -67,8 +70,14 @@ function sendOtp_(npm, body) {
       return json_(false, 'Mohon tunggu beberapa detik sebelum meminta kode baru.');
     }
 
-    var email = resolveEmail_(npm, body.email);
-    if (!email) return json_(false, 'Email pemilih tidak valid atau tidak terdaftar.');
+    var sendCountRaw = cache.get('sc_' + npm);
+    var sendCount = sendCountRaw ? Number(sendCountRaw) : 0;
+    if (sendCount >= MAX_SENDS_PER_WINDOW) {
+      return json_(false, 'Batas permintaan kode OTP untuk NPM ini tercapai. Hubungi Panitia.');
+    }
+
+    var resolved = resolveVoter_(npm, body.idToken);
+    if (!resolved.ok) return json_(false, resolved.message);
 
     var otp = generateOtp_();
     var salt = Utilities.getUuid();
@@ -76,10 +85,11 @@ function sendOtp_(npm, body) {
 
     cache.put('otp_' + npm, JSON.stringify(record), OTP_TTL_SECONDS);
     cache.put('cd_' + npm, '1', RESEND_COOLDOWN_SECONDS);
+    cache.put('sc_' + npm, String(sendCount + 1), SEND_WINDOW_SECONDS);
 
-    var nama = String(body.nama || 'Mahasiswa').replace(/[<>&"']/g, '').substring(0, 100);
+    var nama = String(resolved.nama || 'Mahasiswa').replace(/[<>&"']/g, '').substring(0, 100);
     MailApp.sendEmail({
-      to: email,
+      to: resolved.email,
       subject: 'Kode OTP PERMIRA 2026',
       name: SENDER_NAME,
       body: 'Halo ' + nama + ',\n\nKode OTP Anda: ' + otp + '\n\nBerlaku 3 menit (' + OTP_TTL_SECONDS +
@@ -119,6 +129,10 @@ function verifyOtp_(npm, body) {
 
     if (!safeEqual_(hash_(otp, npm, record.salt), record.hash)) {
       record.attempts += 1;
+      if (record.attempts >= MAX_ATTEMPTS) {
+        cache.remove('otp_' + npm);
+        return json_(false, 'Terlalu banyak percobaan salah. Minta kode OTP baru.');
+      }
       cache.put('otp_' + npm, JSON.stringify(record), Math.max(1, remainingSeconds)); // TTL tidak diperpanjang
       return json_(false, 'Kode OTP salah. Sisa percobaan: ' + (MAX_ATTEMPTS - record.attempts) + '.');
     }
@@ -141,33 +155,70 @@ function isValidEmail_(email) {
 }
 
 /**
- * Tentukan email tujuan. Jika DPT_SPREADSHEET_ID diisi, email diambil dari DPT
- * panitia sehingga penyerang tidak bisa mengarahkan OTP ke email miliknya.
+ * Tentukan email & nama tujuan langsung dari DPT (Google Sheet atau Firestore REST API).
+ * TIDAK pernah mempercayai email dari klien sehingga OTP tidak dapat dialihkan.
  */
-function resolveEmail_(npm, clientEmail) {
+function resolveVoter_(npm, idToken) {
   var email = '';
+  var nama = '';
 
   if (DPT_SPREADSHEET_ID) {
     var sheet = SpreadsheetApp.openById(DPT_SPREADSHEET_ID).getSheetByName(DPT_SHEET_NAME);
-    if (!sheet) return '';
+    if (!sheet) return { ok: false, message: 'Sheet DPT tidak ditemukan.' };
     var values = sheet.getDataRange().getValues();
     var header = values[0].map(function (h) { return String(h).trim().toLowerCase(); });
     var npmCol = header.indexOf('npm');
     var emailCol = header.indexOf('email');
-    if (npmCol < 0 || emailCol < 0) return '';
+    var namaCol = header.indexOf('nama');
+    if (npmCol < 0 || emailCol < 0) return { ok: false, message: 'Format header sheet DPT tidak valid.' };
     for (var i = 1; i < values.length; i++) {
       if (String(values[i][npmCol]).trim() === npm) {
         email = String(values[i][emailCol]).trim().toLowerCase();
+        nama = namaCol >= 0 ? String(values[i][namaCol] || '').trim() : '';
         break;
       }
     }
+    if (!email) return { ok: false, message: 'NPM tidak terdaftar dalam DPT.' };
+  } else if (FIREBASE_PROJECT_ID) {
+    var token = String(idToken || '').trim();
+    if (!token) return { ok: false, message: 'Sesi autentikasi tidak ditemukan. Silakan masuk ulang.' };
+
+    var url = 'https://firestore.googleapis.com/v1/projects/' +
+      encodeURIComponent(FIREBASE_PROJECT_ID) +
+      '/databases/(default)/documents/dpt/' +
+      encodeURIComponent(npm);
+    var res = UrlFetchApp.fetch(url, {
+      method: 'get',
+      headers: { Authorization: 'Bearer ' + token },
+      muteHttpExceptions: true
+    });
+    var status = res.getResponseCode();
+    if (status === 401 || status === 403) {
+      return { ok: false, message: 'Sesi autentikasi tidak valid atau berakhir. Silakan masuk ulang.' };
+    }
+    if (status === 404) {
+      return { ok: false, message: 'NPM tidak terdaftar dalam DPT.' };
+    }
+    if (status < 200 || status >= 300) {
+      return { ok: false, message: 'Gagal memverifikasi data pemilih di DPT.' };
+    }
+
+    var doc = JSON.parse(res.getContentText() || '{}');
+    var fields = doc.fields || {};
+    if (fields.hasVoted && fields.hasVoted.booleanValue === true) {
+      return { ok: false, message: 'Hak suara untuk NPM ini sudah digunakan.' };
+    }
+    email = fields.email && fields.email.stringValue ? String(fields.email.stringValue).trim().toLowerCase() : '';
+    nama = fields.nama && fields.nama.stringValue ? String(fields.nama.stringValue).trim() : '';
   } else {
-    email = String(clientEmail || '').trim().toLowerCase();
+    return { ok: false, message: 'Sumber verifikasi DPT belum dikonfigurasi.' };
   }
 
-  if (!isValidEmail_(email)) return '';
-  if (ALLOWED_EMAIL_DOMAIN && email.split('@')[1] !== ALLOWED_EMAIL_DOMAIN.toLowerCase()) return '';
-  return email;
+  if (!isValidEmail_(email)) return { ok: false, message: 'Email pemilih di DPT tidak valid.' };
+  if (ALLOWED_EMAIL_DOMAIN && email.split('@')[1] !== ALLOWED_EMAIL_DOMAIN.toLowerCase()) {
+    return { ok: false, message: 'Domain email pemilih tidak diizinkan.' };
+  }
+  return { ok: true, email: email, nama: nama || 'Mahasiswa' };
 }
 
 function generateOtp_() {

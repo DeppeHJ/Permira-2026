@@ -1,17 +1,24 @@
 import { OTP_SCRIPT_URL } from '../config'
+import { auth } from '../firebase'
 
 const REQUEST_TIMEOUT_MS = 20000
 
 /**
- * Panggil Google Apps Script (Web App).
+ * Panggil Google Apps Script (Web App) atau Cloud Function OTP.
  * Content-Type text/plain termasuk "simple request" sehingga tidak memicu preflight CORS.
- * Kode OTP dibuat, disimpan (ter-hash), dan diverifikasi sepenuhnya di sisi server Apps Script;
- * browser tidak pernah menerima kode OTP.
+ * Menyertakan Firebase `idToken` di body agar server dapat memverifikasi sesi & mengambil
+ * email DPT langsung dari Firestore (tanpa mempercayai email dari browser).
  */
 async function callScript(payload) {
   if (!OTP_SCRIPT_URL) {
     throw new Error('Layanan OTP belum dikonfigurasi. Hubungi Panitia.')
   }
+
+  const user = auth?.currentUser
+  if (!user) {
+    throw new Error('Sesi pemilih tidak ditemukan. Silakan masuk kembali.')
+  }
+  const idToken = await user.getIdToken()
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -20,7 +27,7 @@ async function callScript(payload) {
     const response = await fetch(OTP_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, idToken }),
       redirect: 'follow',
       signal: controller.signal,
     })

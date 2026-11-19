@@ -51,7 +51,7 @@ app.post('/api/otp/send', async (req, res) => {
     const { error } = await resend.emails.send({
       from: 'Panitia PERMIRA <onboarding@resend.dev>',
       to: [email],
-      subject: `Kode OTP PERMIRA 2026: ${otp}`,
+      subject: 'Kode OTP PERMIRA 2026',
       html: `
         <div style="font-family: sans-serif; background: #3D1203; padding: 24px;">
           <div style="background: white; border-radius: 12px; padding: 24px; max-width: 440px; margin: auto;">
