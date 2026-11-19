@@ -5,6 +5,7 @@ import {
   AI_CANDIDATES,
   DEFAULT_CONTACTS,
   DEFAULT_ELECTION,
+  DEFAULT_FAQS,
   ELECTION_TIMELINE,
   KABEM_CANDIDATES,
   SOP_TABS,
@@ -15,7 +16,7 @@ import {
 import { normalizeCandidate, sortCandidates } from '../utils/candidates'
 import { ElectionContext } from './electionContext'
 
-const SOURCES = ['election', 'timeline', 'sop', 'categories', 'contacts', 'candidates']
+const SOURCES = ['election', 'timeline', 'sop', 'categories', 'contacts', 'faqs', 'candidates']
 const READY_TIMEOUT_MS = 4000
 
 const DEFAULT_CANDIDATES = [...AI_CANDIDATES, ...KABEM_CANDIDATES]
@@ -25,6 +26,7 @@ const DEFAULT_CANDIDATES = [...AI_CANDIDATES, ...KABEM_CANDIDATES]
  *  - `config/election`    { name, year, angkatanCount, description, candidatesSeeded }
  *  - `config/categories`  { items: [...] }
  *  - `config/contacts`    { items: [...] }
+ *  - `config/faqs`        { items: [...] }
  *  - `config/timeline`    { items: [...] }
  *  - `config/sop`         { tabs: [...] }
  *  - `candidates/{id}`
@@ -34,6 +36,7 @@ export default function ElectionProvider({ children }) {
   const [electionDoc, setElectionDoc] = useState(null)
   const [categoriesDoc, setCategoriesDoc] = useState(null)
   const [contactsDoc, setContactsDoc] = useState(null)
+  const [faqsDoc, setFaqsDoc] = useState(null)
   const [timelineDoc, setTimelineDoc] = useState(null)
   const [sopDoc, setSopDoc] = useState(null)
   const [candidateDocs, setCandidateDocs] = useState(null)
@@ -61,6 +64,7 @@ export default function ElectionProvider({ children }) {
       watchDoc('election', 'election', setElectionDoc),
       watchDoc('categories', 'categories', setCategoriesDoc),
       watchDoc('contacts', 'contacts', setContactsDoc),
+      watchDoc('faqs', 'faqs', setFaqsDoc),
       watchDoc('timeline', 'timeline', setTimelineDoc),
       watchDoc('sop', 'sop', setSopDoc),
       onSnapshot(
@@ -120,6 +124,11 @@ export default function ElectionProvider({ children }) {
         ? contactsDoc.items
         : DEFAULT_CONTACTS
 
+    const faqs =
+      Array.isArray(faqsDoc?.items) && faqsDoc.items.length > 0
+        ? faqsDoc.items
+        : DEFAULT_FAQS
+
     const hasStoredCandidates = Boolean(candidateDocs && candidateDocs.length > 0)
     const usingDefaultCandidates = !candidatesSeeded && !hasStoredCandidates
     const source = usingDefaultCandidates ? DEFAULT_CANDIDATES : (candidateDocs ?? [])
@@ -139,6 +148,7 @@ export default function ElectionProvider({ children }) {
       description,
       angkatan,
       contacts,
+      faqs,
       timeline,
       sop,
       candidates,
@@ -165,6 +175,7 @@ export default function ElectionProvider({ children }) {
     sopDoc,
     categoriesDoc,
     contactsDoc,
+    faqsDoc,
     electionDoc,
   ])
 

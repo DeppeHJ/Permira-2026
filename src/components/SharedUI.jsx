@@ -77,8 +77,8 @@ export function CandidatePhoto({ src, alt = '', className = '' }) {
 const NAV_ITEMS_DEFAULT = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
   { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
-  { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'], isCta: true },
   { id: 'sop', label: 'SOP', icon: ScrollText, matches: ['sop'] },
+  { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'], isCta: true },
 ]
 
 const NAV_ITEMS_VOTED = [

@@ -38,6 +38,7 @@ export const APP_NAME = `${DEFAULT_ELECTION.name} ${DEFAULT_ELECTION.year}`
 export const DEFAULT_CONTACTS = [
   {
     id: 'cp-01',
+    nickname: '',
     name: 'Helpdesk Teknis & OTP 1',
     phone: '0812-3456-7891',
     whatsapp: '6281234567891',
@@ -45,6 +46,7 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-02',
+    nickname: '',
     name: 'Helpdesk Teknis & OTP 2',
     phone: '0812-3456-7892',
     whatsapp: '6281234567892',
@@ -52,6 +54,7 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-03',
+    nickname: '',
     name: 'Divisi DPT & Data Pemilih Panitia',
     phone: '0812-3456-7893',
     whatsapp: '6281234567893',
@@ -59,6 +62,7 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-04',
+    nickname: '',
     name: 'Humas & Protokoler Panitia',
     phone: '0812-3456-7894',
     whatsapp: '6281234567894',
@@ -66,10 +70,39 @@ export const DEFAULT_CONTACTS = [
   },
   {
     id: 'cp-05',
+    nickname: '',
     name: 'Panitia Pengawas Pemilu (Panwaslu)',
     phone: '0812-3456-7895',
     whatsapp: '6281234567895',
     available: '24 Jam Selama Pemilihan',
+  },
+]
+
+/** FAQ bawaan pada halaman Narahubung & Pusat Bantuan. Super Admin dapat menimpanya via `config/faqs`. */
+export const DEFAULT_FAQS = [
+  {
+    id: 'faq-01',
+    question: 'OTP tidak masuk ke email UI?',
+    answer:
+      'Periksa folder Spam / Promosi di akun email kampus Anda. Kode OTP berlaku selama 3 menit dan hanya dapat dipakai sekali. Jika belum masuk, tunggu hitung mundur selesai lalu klik Kirim Ulang OTP atau hubungi Narahubung di bawah.',
+  },
+  {
+    id: 'faq-02',
+    question: 'NPM tidak terdaftar di DPT?',
+    answer:
+      'Pastikan format penulisan NPM Anda benar (hanya angka). Jika masih dinyatakan tidak terdaftar, silakan hubungi Divisi DPT Panitia untuk pengecekan status mahasiswa aktif.',
+  },
+  {
+    id: 'faq-03',
+    question: 'Apakah pilihan saya rahasia?',
+    answer:
+      '100% Rahasia. Sistem menggunakan arsitektur pemisahan basis data: identitas Anda (DPT) disimpan terpisah dari kotak suara anonim. Panitia maupun pengawas tidak dapat melihat siapa memilih siapa.',
+  },
+  {
+    id: 'faq-04',
+    question: 'Sesi memilih terputus atau error?',
+    answer:
+      'Hak suara Anda baru dianggap terpakai ketika Anda sudah berhasil memasukkan kode OTP pada halaman Review. Jika koneksi terputus sebelumnya, Anda dapat langsung masuk kembali.',
   },
 ]
 

@@ -10,14 +10,16 @@ import {
   MessageCircle,
   Phone,
   ShieldCheck,
+  UserRound,
 } from 'lucide-react'
 import { BrandLogo } from '../components/SharedUI'
 import { useElection } from '../context/electionContext'
-import { DEFAULT_CONTACTS } from '../data'
+import { DEFAULT_CONTACTS, DEFAULT_FAQS } from '../data'
 
 export default function ContactPage({ onBack, onNavigate }) {
-  const { appName, contacts } = useElection()
+  const { appName, contacts, faqs } = useElection()
   const list = Array.isArray(contacts) && contacts.length > 0 ? contacts : DEFAULT_CONTACTS
+  const faqList = Array.isArray(faqs) && faqs.length > 0 ? faqs : DEFAULT_FAQS
 
   const [copiedId, setCopiedId] = useState(null)
 
@@ -83,10 +85,32 @@ export default function ContactPage({ onBack, onNavigate }) {
         </div>
       </section>
 
+      {/* Pertanyaan yang Sering Diajukan (FAQ) */}
+      <section
+        aria-labelledby="faq-heading"
+        className="rounded-2xl border border-gold/25 bg-card-dark p-6 shadow-xl shadow-black/30"
+      >
+        <h2 id="faq-heading" className="flex items-center gap-2 text-lg font-bold text-gold">
+          <HelpCircle className="h-5 w-5 text-accent" aria-hidden="true" />
+          Frequently Asked Question (FAQ)
+        </h2>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {faqList.map((faq, index) => (
+            <div key={faq.id || index} className="rounded-xl border border-gold/15 bg-bean/50 p-4">
+              <h3 className="font-bold text-sm text-gold">{faq.question}</h3>
+              <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gold/80">
+                {faq.answer}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Grid 5 Contact Persons */}
       <section aria-labelledby="contacts-list" className="space-y-4">
         <h2 id="contacts-list" className="text-xl font-bold text-gold">
-          Daftar Narahubung Panitia (5 Kontak Siaga)
+          Daftar Narahubung Panitia
         </h2>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -105,9 +129,17 @@ export default function ContactPage({ onBack, onNavigate }) {
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-lg font-extrabold text-white transition-colors group-hover:text-gold">
-                      {contact.name}
-                    </h3>
+                    <div className="min-w-0">
+                      {contact.nickname?.trim() && (
+                        <p className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border border-gold/25 bg-bean/80 px-2.5 py-0.5 text-xs font-bold text-gold">
+                          <UserRound className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                          <span className="truncate">{contact.nickname.trim()}</span>
+                        </p>
+                      )}
+                      <h3 className="text-lg font-extrabold text-white transition-colors group-hover:text-gold">
+                        {contact.name}
+                      </h3>
+                    </div>
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-bean/60 text-xs font-bold text-gold/70">
                       {index + 1}
                     </span>
@@ -164,54 +196,6 @@ export default function ContactPage({ onBack, onNavigate }) {
               </article>
             )
           })}
-        </div>
-      </section>
-
-      {/* Pertanyaan yang Sering Diajukan (FAQ) */}
-      <section
-        aria-labelledby="faq-heading"
-        className="rounded-2xl border border-gold/25 bg-card-dark p-6 shadow-xl shadow-black/30"
-      >
-        <h2 id="faq-heading" className="flex items-center gap-2 text-lg font-bold text-gold">
-          <HelpCircle className="h-5 w-5 text-accent" aria-hidden="true" />
-          Pertanyaan yang Sering Diajukan (FAQ)
-        </h2>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-gold/15 bg-bean/50 p-4">
-            <h3 className="font-bold text-sm text-gold">OTP tidak masuk ke email UI?</h3>
-            <p className="mt-1 text-xs leading-relaxed text-gold/80">
-              Periksa folder <strong>Spam / Promosi</strong> di akun email kampus Anda. Kode OTP berlaku
-              selama 3 menit dan hanya dapat dipakai sekali. Jika belum masuk, tunggu hitung mundur
-              selesai lalu klik <em>Kirim Ulang OTP</em> atau hubungi Narahubung di atas.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-gold/15 bg-bean/50 p-4">
-            <h3 className="font-bold text-sm text-gold">NPM tidak terdaftar di DPT?</h3>
-            <p className="mt-1 text-xs leading-relaxed text-gold/80">
-              Pastikan format penulisan NPM Anda benar (hanya angka). Jika masih dinyatakan tidak
-              terdaftar, silakan hubungi <strong>Divisi DPT Panitia</strong> untuk pengecekan status
-              mahasiswa aktif.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-gold/15 bg-bean/50 p-4">
-            <h3 className="font-bold text-sm text-gold">Apakah pilihan saya rahasia?</h3>
-            <p className="mt-1 text-xs leading-relaxed text-gold/80">
-              <strong>100% Rahasia.</strong> Sistem menggunakan arsitektur pemisahan basis data: identitas
-              Anda (DPT) disimpan terpisah dari kotak suara anonim. Panitia maupun pengawas tidak dapat
-              melihat siapa memilih siapa.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-gold/15 bg-bean/50 p-4">
-            <h3 className="font-bold text-sm text-gold">Sesi memilih terputus atau error?</h3>
-            <p className="mt-1 text-xs leading-relaxed text-gold/80">
-              Hak suara Anda baru dianggap terpakai ketika Anda sudah berhasil memasukkan kode OTP pada
-              halaman Review. Jika koneksi terputus sebelumnya, Anda dapat langsung masuk kembali.
-            </p>
-          </div>
         </div>
       </section>
 

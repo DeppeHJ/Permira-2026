@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "skills": {
+    "antislop": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop/SKILL.md",
+      "computedHash": "713b6b6522cb3de28aca8b2b76bdcce75788f8887e3fbd3dae7013569107b520"
+    },
+    "antislop-code": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-code/SKILL.md",
+      "computedHash": "4a2d3d64037896a3ab4e2c3df026e7a59fa92458617c65a2e0ed7fc3c456266a"
+    },
+    "antislop-copywriting": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-copywriting/SKILL.md",
+      "computedHash": "57a00dcdb416ea8ed4b2a388ef9580f120afbc3d9bf8bfa8cd4e6796443c9a22"
+    },
+    "antislop-human": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-human/SKILL.md",
+      "computedHash": "1ae9ac42338b06ef053924646e0410aa6a63d09afc4a7f61c2cc90c6fa0657b4"
+    },
+    "antislop-layoutmobile": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-layoutmobile/SKILL.md",
+      "computedHash": "c3f54f8a065e9c371a9c5bb5076b41fc06bbeaeaca125f35459a4b8b17be34f2"
+    },
+    "antislop-ui": {
+      "source": "miqdadbadjuber/anti-slop",
+      "commit": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-ui/SKILL.md",
+      "computedHash": "09c3efcee47866061a1609e298068941eb1d35e73eea95ae67ea2453be3951a9"
+    },
+    "avoid-ai-writing": {
+      "source": "conorbronsdon/avoid-ai-writing",
+      "commit": "a5d6bae7c0d762dbcff74ca86c17a7ac9fee4151",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "c843b9dc987336ab5bc4536bdb69ba3371ce6a68559a24148bfe505e83b84493"
+    },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "commit": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "b10eab0a9684cd09cf34c31ef04a3bf530a5f4404422f9c520d42372d670c7fc"
+    },
+    "humanizer": {
+      "source": "blader/humanizer",
+      "commit": "b48c832f0f809c1b5658edbb838c2521b72f2413",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "04cdabbcceaa7b5d4bd4b1ea02339013503d623b270b5b3b2e274837494d7134"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "commit": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "08bd5bf141cb507f46bd8347890cd985865606f15adf88295ed3a73bc9ad5d96"
+    },
+    "no-ai-slop": {
+      "source": "petergyang/no-ai-slop",
+      "commit": "000650b156983f5159695b441477f4e63b25dc85",
+      "sourceType": "github",
+      "skillPath": "skills/no-ai-slop/SKILL.md",
+      "computedHash": "325408c3843e4a9d148a439fa665a0722d1248e23da8ef84646c9647ff4b3f88"
+    },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "commit": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+      "sourceType": "github",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "computedHash": "8513eb3b2c39b8d05ef4f47b32ef4d18280b93a5efb91d8df6272f7435034af5"
+    },
+    "stop-slop": {
+      "source": "hardikpandya/stop-slop",
+      "commit": "8da1f030185bdfe8471220585162991eaeb970e9",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "02a5b429945020ed8a5ed4024d57384258c2596f09ab42c3e7498a8a43ec1c36"
+    }
+  }
+}

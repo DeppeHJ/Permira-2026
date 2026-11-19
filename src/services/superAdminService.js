@@ -72,6 +72,13 @@ export async function saveContacts(contacts) {
   })
 }
 
+export async function saveFaqs(faqs) {
+  await setDoc(doc(db, 'config', 'faqs'), {
+    items: faqs,
+    updatedAt: serverTimestamp(),
+  })
+}
+
 /* -------------------------------------------------------------------------- */
 /* Kandidat                                                                   */
 /* -------------------------------------------------------------------------- */

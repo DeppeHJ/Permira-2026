@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CalendarCog,
   Headphones,
+  HelpCircle,
   Layers,
   LayoutDashboard,
   LogOut,
@@ -15,6 +16,7 @@ import CandidatesPanel from './CandidatesPanel'
 import CategoriesPanel from './CategoriesPanel'
 import ContactsPanel from './ContactsPanel'
 import ElectionSettingsPanel from './ElectionSettingsPanel'
+import FaqPanel from './FaqPanel'
 import SopPanel from './SopPanel'
 import TimelinePanel from './TimelinePanel'
 
@@ -22,6 +24,7 @@ const TABS = [
   { id: 'periode', label: 'Periode & Reset', icon: CalendarCog, Panel: ElectionSettingsPanel },
   { id: 'kategori', label: 'Kategori Pemilih', icon: Layers, Panel: CategoriesPanel },
   { id: 'kontak', label: 'Narahubung (CP)', icon: Headphones, Panel: ContactsPanel },
+  { id: 'faq', label: 'FAQ', icon: HelpCircle, Panel: FaqPanel },
   { id: 'timeline', label: 'Timeline', icon: CalendarClock, Panel: TimelinePanel },
   { id: 'sop', label: 'SOP', icon: ScrollText, Panel: SopPanel },
   { id: 'kandidat', label: 'Kandidat', icon: Users, Panel: CandidatesPanel },

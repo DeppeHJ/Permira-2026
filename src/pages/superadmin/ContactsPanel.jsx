@@ -8,6 +8,7 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 import { useElection } from '../../context/electionContext'
 import { DEFAULT_CONTACTS } from '../../data'
@@ -20,6 +21,7 @@ const newId = () => `cp-${Date.now().toString(36)}${Math.random().toString(36).s
 const normalize = (items) =>
   (items || []).map((item) => ({
     id: item.id || newId(),
+    nickname: String(item.nickname || '').trim(),
     name: String(item.name || '').trim(),
     phone: String(item.phone || '').trim(),
     whatsapp: String(item.whatsapp || '').trim(),
@@ -63,6 +65,7 @@ export default function ContactsPanel({ showToast }) {
       ...prev,
       {
         id: newId(),
+        nickname: '',
         name: `Narahubung Baru ${prev.length + 1}`,
         phone: '0812-0000-0000',
         whatsapp: '6281200000000',
@@ -72,7 +75,7 @@ export default function ContactsPanel({ showToast }) {
   }
 
   const handleResetToDefault = () => {
-    setItems(DEFAULT_CONTACTS)
+    setItems(normalize(DEFAULT_CONTACTS))
     setResetDialogOpen(false)
     showToast({
       type: 'info',
@@ -120,6 +123,7 @@ export default function ContactsPanel({ showToast }) {
     try {
       const cleaned = items.map((i) => ({
         id: i.id || newId(),
+        nickname: i.nickname.trim(),
         name: i.name.trim(),
         phone: i.phone.trim(),
         whatsapp: i.whatsapp.replace(/[^0-9]/g, '') || i.phone.replace(/[^0-9]/g, ''),
@@ -186,7 +190,9 @@ export default function ContactsPanel({ showToast }) {
                       #{index + 1}
                     </span>
                     <span className="text-sm font-bold text-gold">
-                      {item.name || `Narahubung ${index + 1}`}
+                      {item.nickname
+                        ? `${item.nickname} — ${item.name || `Narahubung ${index + 1}`}`
+                        : item.name || `Narahubung ${index + 1}`}
                     </span>
                   </div>
 
@@ -225,26 +231,30 @@ export default function ContactsPanel({ showToast }) {
                 <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-gold/80">
-                      Nama Kontak
+                      Nama Panggilan (Opsional)
                     </label>
-                    <input
-                      type="text"
-                      value={item.name}
-                      placeholder="Contoh: Helpdesk Teknis 1"
-                      onChange={(e) => update(index, { name: e.target.value })}
-                      className={inputSingle}
-                    />
+                    <div className="relative">
+                      <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/50" />
+                      <input
+                        type="text"
+                        value={item.nickname}
+                        maxLength={80}
+                        placeholder="Contoh: Kak Budi (tampil di atas judul)"
+                        onChange={(e) => update(index, { nickname: e.target.value })}
+                        className={`${inputSingle} pl-9`}
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-gold/80">
-                      Jam Layanan (Ketersediaan)
+                      Judul / Divisi Kontak
                     </label>
                     <input
                       type="text"
-                      value={item.available}
-                      placeholder="Contoh: 08.00 - 21.00 WIB"
-                      onChange={(e) => update(index, { available: e.target.value })}
+                      value={item.name}
+                      placeholder="Contoh: Narahubung Reguler & RPL 2026"
+                      onChange={(e) => update(index, { name: e.target.value })}
                       className={inputSingle}
                     />
                   </div>
@@ -286,6 +296,19 @@ export default function ContactsPanel({ showToast }) {
                         className={`${inputSingle} pl-9 font-mono text-xs`}
                       />
                     </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-gold/80">
+                      Jam Layanan (Ketersediaan)
+                    </label>
+                    <input
+                      type="text"
+                      value={item.available}
+                      placeholder="Contoh: 08.00 - 21.00 WIB"
+                      onChange={(e) => update(index, { available: e.target.value })}
+                      className={inputSingle}
+                    />
                   </div>
                 </div>
               </div>
