@@ -15,22 +15,23 @@ const asList = (value) =>
 /** Pastikan semua field kandidat bertipe benar sebelum dipakai UI. */
 export function normalizeCandidate(raw) {
   const number = asString(raw.number)
+  const type = raw.type === 'kabem' ? 'kabem' : 'ai'
   return {
     ...raw,
     id: asString(raw.id),
-    type: raw.type === 'kabem' ? 'kabem' : 'ai',
+    type,
     number,
     order: Number(raw.order) || Number(number) || 0,
     name: asString(raw.name),
     ketua: asString(raw.ketua),
     wakil: asString(raw.wakil),
-    role: asString(raw.role) || CANDIDATE_TYPES[raw.type === 'kabem' ? 'kabem' : 'ai'].role,
+    role: asString(raw.role) || CANDIDATE_TYPES[type].role,
     study: asString(raw.study),
     photo: asString(raw.photo),
     tagline: asString(raw.tagline),
     visi: asString(raw.visi),
     misi: asList(raw.misi),
-    programs: asList(raw.programs),
+    programs: type === 'kabem' ? asList(raw.programs) : [],
   }
 }
 
@@ -63,8 +64,8 @@ export const emptyCandidateForm = (type, number = '') => ({
   photo: '',
   tagline: '',
   visi: '',
-  misiText: '',
-  programsText: '',
+  misi: [''],
+  programs: type === 'kabem' ? [''] : [],
 })
 
 /** Dokumen kandidat -> model formulir (mengisi field jurusan/angkatan dari `study` lama bila perlu). */
@@ -79,8 +80,8 @@ export function toCandidateForm(candidate) {
     photo: c.photo,
     tagline: c.tagline,
     visi: c.visi,
-    misiText: c.misi.join('\n'),
-    programsText: c.programs.join('\n'),
+    misi: c.misi.length > 0 ? c.misi : [''],
+    programs: c.type === 'kabem' ? (c.programs.length > 0 ? c.programs : ['']) : [],
   }
 
   if (c.type === 'ai') {
@@ -105,6 +106,11 @@ const splitLines = (text) =>
     .map((line) => line.trim())
     .filter(Boolean)
 
+const cleanPoints = (value) =>
+  Array.isArray(value)
+    ? value.map((item) => asString(item).trim()).filter(Boolean)
+    : splitLines(value)
+
 const joinStudy = (jurusan, angkatan, labelled) => {
   const j = asString(jurusan).trim()
   const a = asString(angkatan).trim()
@@ -125,8 +131,8 @@ export function fromCandidateForm(form) {
     photo: asString(form.photo).trim(),
     tagline: asString(form.tagline).trim(),
     visi: asString(form.visi).trim(),
-    misi: splitLines(form.misiText),
-    programs: splitLines(form.programsText),
+    misi: cleanPoints(form.misi ?? form.misiText),
+    programs: type === 'kabem' ? cleanPoints(form.programs ?? form.programsText) : [],
   }
 
   if (type === 'ai') {
@@ -169,8 +175,10 @@ export function validateCandidateForm(form) {
     return 'Nama kandidat wajib diisi.'
   }
   if (!asString(form.visi).trim()) return 'Visi wajib diisi.'
-  if (splitLines(form.misiText).length === 0) return 'Isi minimal satu poin misi.'
-  if (splitLines(form.programsText).length === 0) return 'Isi minimal satu program prioritas.'
+  if (cleanPoints(form.misi ?? form.misiText).length === 0) return 'Isi minimal satu poin misi.'
+  if (form.type === 'kabem' && cleanPoints(form.programs ?? form.programsText).length === 0) {
+    return 'Isi minimal satu program prioritas.'
+  }
   return ''
 }
 

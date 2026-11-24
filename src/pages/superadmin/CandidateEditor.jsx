@@ -1,10 +1,208 @@
 import { useEffect, useRef, useState } from 'react'
-import { ImagePlus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ImagePlus, Plus, Trash2, X } from 'lucide-react'
 import { CandidatePhoto, Spinner } from '../../components/SharedUI'
 import { CANDIDATE_TYPES, validateCandidateForm } from '../../utils/candidates'
 import { fileToCompressedDataUrl } from '../../utils/image'
-import { btnGhost, btnPrimary, inputSingle, textareaClass } from './styles'
+import { btnGhost, btnPrimary, iconBtn, inputSingle, textareaClass } from './styles'
 import { Field } from './ui'
+
+const stripLeadingBullet = (line) =>
+  line.replace(/^\s*(?:\d+[.)]\s*|[-•*–—]\s+)/, '').trim()
+
+/**
+ * Editor daftar poin (Misi & Program Prioritas): setiap poin tampil dalam kotak bernomor terpisah
+ * agar batas antarpoin selalu jelas, mendukung Enter untuk poin baru, geser urutan, serta tempel banyak baris sekaligus.
+ */
+function PointListEditor({
+  idPrefix,
+  label,
+  addLabel,
+  placeholderPrefix,
+  hint,
+  items,
+  multiline = false,
+  onChange,
+}) {
+  const inputRefs = useRef([])
+  const list = Array.isArray(items) && items.length > 0 ? items : ['']
+  const filledCount = list.filter((item) => item.trim()).length
+
+  const focusRow = (index) => {
+    requestAnimationFrame(() => {
+      const el = inputRefs.current[index]
+      if (el) {
+        el.focus()
+        const len = el.value.length
+        el.setSelectionRange?.(len, len)
+      }
+    })
+  }
+
+  const updateAt = (index, value) => {
+    const next = [...list]
+    next[index] = value
+    onChange(next)
+  }
+
+  const insertAfter = (index) => {
+    const next = [...list]
+    next.splice(index + 1, 0, '')
+    onChange(next)
+    focusRow(index + 1)
+  }
+
+  const move = (index, delta) => {
+    const target = index + delta
+    if (target < 0 || target >= list.length) return
+    const next = [...list]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+    focusRow(target)
+  }
+
+  const removeAt = (index) => {
+    if (list.length <= 1) {
+      onChange([''])
+      focusRow(0)
+      return
+    }
+    const next = list.filter((_, i) => i !== index)
+    onChange(next)
+    focusRow(Math.max(0, index - 1))
+  }
+
+  const handleKeyDown = (index, event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      insertAfter(index)
+    }
+  }
+
+  const handlePaste = (index, event) => {
+    if (list[index].trim()) return
+    const pasted = event.clipboardData?.getData('text') || ''
+    if (!/[\r\n]/.test(pasted)) return
+
+    const lines = pasted
+      .split(/\r?\n/)
+      .map(stripLeadingBullet)
+      .filter(Boolean)
+
+    if (lines.length > 1) {
+      event.preventDefault()
+      const next = [...list]
+      next.splice(index, 1, ...lines)
+      onChange(next)
+      focusRow(index + lines.length - 1)
+    }
+  }
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label htmlFor={`${idPrefix}-0`} className="text-sm font-semibold text-gold">
+          {label}
+        </label>
+        <span className="rounded-full border border-gold/25 bg-bean/60 px-2.5 py-0.5 text-xs font-bold text-gold/80">
+          {filledCount} poin terisi
+        </span>
+      </div>
+
+      <ol className="space-y-2.5">
+        {list.map((value, index) => (
+          <li
+            key={index}
+            className="flex items-start gap-2.5 rounded-xl border border-gold/20 bg-bean/45 p-2.5 transition-colors focus-within:border-gold/50"
+          >
+            <span
+              className="mt-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand text-xs font-extrabold text-white"
+              aria-hidden="true"
+            >
+              {index + 1}
+            </span>
+
+            <div className="min-w-0 flex-1">
+              {multiline ? (
+                <textarea
+                  ref={(el) => {
+                    inputRefs.current[index] = el
+                  }}
+                  id={`${idPrefix}-${index}`}
+                  rows={2}
+                  value={value}
+                  onChange={(event) => updateAt(index, event.target.value)}
+                  onKeyDown={(event) => handleKeyDown(index, event)}
+                  onPaste={(event) => handlePaste(index, event)}
+                  placeholder={`${placeholderPrefix} ${index + 1}…`}
+                  aria-label={`${label} poin ${index + 1}`}
+                  className={`${textareaClass} min-h-[60px] py-2`}
+                />
+              ) : (
+                <input
+                  ref={(el) => {
+                    inputRefs.current[index] = el
+                  }}
+                  id={`${idPrefix}-${index}`}
+                  type="text"
+                  value={value}
+                  onChange={(event) => updateAt(index, event.target.value)}
+                  onKeyDown={(event) => handleKeyDown(index, event)}
+                  onPaste={(event) => handlePaste(index, event)}
+                  placeholder={`${placeholderPrefix} ${index + 1}…`}
+                  aria-label={`${label} poin ${index + 1}`}
+                  className={inputSingle}
+                />
+              )}
+            </div>
+
+            <div className="mt-1 flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => move(index, -1)}
+                disabled={index === 0}
+                className={iconBtn}
+                title="Pindahkan ke atas"
+                aria-label={`Pindahkan ${label} poin ${index + 1} ke atas`}
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => move(index, 1)}
+                disabled={index === list.length - 1}
+                className={iconBtn}
+                title="Pindahkan ke bawah"
+                aria-label={`Pindahkan ${label} poin ${index + 1} ke bawah`}
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => removeAt(index)}
+                className={`${iconBtn} hover:border-red-400 hover:bg-red-950/60 hover:text-red-300`}
+                title={list.length <= 1 ? 'Kosongkan poin' : 'Hapus poin'}
+                aria-label={`Hapus ${label} poin ${index + 1}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+        <button
+          type="button"
+          onClick={() => insertAfter(list.length - 1)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-gold/30 px-3 text-xs font-bold text-gold transition-colors hover:bg-gold/10"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" /> {addLabel}
+        </button>
+        {hint && <p className="text-xs text-gold/55">{hint}</p>}
+      </div>
+    </div>
+  )
+}
 
 function PhotoField({ value, isPair, onChange, showToast }) {
   const fileRef = useRef(null)
@@ -257,25 +455,29 @@ export default function CandidateEditor({ initial, isNew, saving, onSave, onClos
             <textarea id="cand-visi" rows={3} value={form.visi} onChange={set('visi')} className={textareaClass} />
           </Field>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Field label="Misi" htmlFor="cand-misi" hint="Satu poin misi per baris.">
-              <textarea
-                id="cand-misi"
-                rows={7}
-                value={form.misiText}
-                onChange={set('misiText')}
-                className={textareaClass}
+          <div className="space-y-6">
+            <PointListEditor
+              idPrefix="cand-misi"
+              label="Misi"
+              addLabel="Tambah Poin Misi"
+              placeholderPrefix="Tulis poin misi ke"
+              hint="Tekan Enter untuk menambah poin baru (Shift+Enter untuk baris baru di dalam poin)."
+              items={form.misi}
+              multiline
+              onChange={(misi) => setForm((prev) => ({ ...prev, misi }))}
+            />
+
+            {isPair && (
+              <PointListEditor
+                idPrefix="cand-programs"
+                label="Program prioritas"
+                addLabel="Tambah Program"
+                placeholderPrefix="Tulis program prioritas ke"
+                hint="Tekan Enter untuk menambah program baru."
+                items={form.programs}
+                onChange={(programs) => setForm((prev) => ({ ...prev, programs }))}
               />
-            </Field>
-            <Field label="Program prioritas" htmlFor="cand-programs" hint="Satu program per baris.">
-              <textarea
-                id="cand-programs"
-                rows={7}
-                value={form.programsText}
-                onChange={set('programsText')}
-                className={textareaClass}
-              />
-            </Field>
+            )}
           </div>
 
           {error && (

@@ -76,15 +76,15 @@ export function CandidatePhoto({ src, alt = '', className = '' }) {
 
 const NAV_ITEMS_DEFAULT = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
-  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
   { id: 'sop', label: 'SOP', icon: ScrollText, matches: ['sop'] },
   { id: 'voting', label: 'Voting', icon: Vote, matches: ['voting', 'voteAI', 'voteKabem', 'review'], isCta: true },
+  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
 ]
 
 const NAV_ITEMS_VOTED = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, matches: ['dashboard'] },
-  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
   { id: 'sop', label: 'SOP Pemilihan', icon: ScrollText, matches: ['sop'] },
+  { id: 'contact', label: 'Narahubung', icon: PhoneCall, matches: ['contact'] },
 ]
 
 export function TopNav({ current, onNavigate, onLogout, voter }) {
@@ -501,19 +501,21 @@ export function CandidateModal({ candidate, selected, onClose, onChoose }) {
             </ol>
           </section>
 
-          <section>
-            <h3 className="mb-3 text-lg font-bold text-brand">Program Prioritas</h3>
-            <ul className="flex flex-wrap gap-2">
-              {candidate.programs.map((program, index) => (
-                <li
-                  key={`${index}-${program}`}
-                  className="break-words rounded-full border border-brand/30 bg-amber-50 px-3 py-1 text-xs font-bold text-brand"
-                >
-                  {program}
-                </li>
-              ))}
-            </ul>
-          </section>
+          {candidate.type === 'kabem' && candidate.programs.length > 0 && (
+            <section>
+              <h3 className="mb-3 text-lg font-bold text-brand">Program Prioritas</h3>
+              <ul className="flex flex-wrap gap-2">
+                {candidate.programs.map((program, index) => (
+                  <li
+                    key={`${index}-${program}`}
+                    className="break-words rounded-full border border-brand/30 bg-amber-50 px-3 py-1 text-xs font-bold text-brand"
+                  >
+                    {program}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-amber-200/60 bg-white p-4">

@@ -154,7 +154,6 @@ export const AI_CANDIDATES = [
       'Mengawal transparansi anggaran kegiatan kemahasiswaan.',
       'Mendorong pelibatan mahasiswa Magister dan Pascasarjana dalam kegiatan kampus.',
     ],
-    programs: ['Kotak Aspirasi Digital', 'Forum Dengar Pendapat', 'Laporan Anggaran Terbuka'],
   },
   {
     id: 'ai-02',
@@ -172,7 +171,6 @@ export const AI_CANDIDATES = [
       'Mengembangkan program pendampingan bagi mahasiswa baru.',
       'Memperkuat budaya kritis yang santun dan berbasis data.',
     ],
-    programs: ['Evaluasi Organisasi', 'Advokasi Akademik', 'Mentoring Mahasiswa Baru'],
   },
   {
     id: 'ai-03',
@@ -190,7 +188,6 @@ export const AI_CANDIDATES = [
       'Menerbitkan ringkasan kebijakan kemahasiswaan yang mudah dipahami.',
       'Menjalin kolaborasi dengan alumni untuk pengembangan karier.',
     ],
-    programs: ['Kampus Aman', 'Pelatihan Kepemimpinan', 'Jejaring Alumni'],
   },
 ]
 

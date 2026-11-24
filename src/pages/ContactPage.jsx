@@ -203,7 +203,7 @@ export default function ContactPage({ onBack, onNavigate }) {
       <footer className="text-center text-xs text-gold/60">
         <p className="flex items-center justify-center gap-1.5">
           <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
-          Panitia Pemilihan • {appName}
+          Divisi Pemungutan Suara • {appName}
         </p>
       </footer>
     </div>
