@@ -175,3 +175,33 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+.ballot-protected {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ballot-protected input,
+.ballot-protected textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+.ballot-protected img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+@media print {
+  body.ballot-print-protected header,
+  body.ballot-print-protected nav,
+  body.ballot-print-protected .ballot-screen-content {
+    display: none !important;
+  }
+
+  body.ballot-print-protected .ballot-print-warning {
+    display: block !important;
+  }
+}

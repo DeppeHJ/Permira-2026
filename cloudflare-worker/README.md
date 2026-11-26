@@ -1,8 +1,8 @@
-# PERMIRA 2026 — OTP Backend (Cloudflare Workers + Mailketing / Zoho CPaaS)
+# PERMIRA 2026 — OTP Backend (Cloudflare Workers + Brevo / Mailketing / Zoho CPaaS)
 
 Worker ini menggantikan `script.google.com` dengan kapasitas paket gratis Cloudflare hingga **100.000 request/hari** menggunakan **Durable Objects (SQLite)** agar aman dari *race condition* dan pembatasan kuota KV.
 
-## Cara Deploy (Mailketing - Default)
+## Cara Deploy (Brevo - Default)
 
 1. Masuk ke folder `cloudflare-worker`:
    ```powershell
@@ -13,11 +13,11 @@ Worker ini menggantikan `script.google.com` dengan kapasitas paket gratis Cloudf
    ```powershell
    npx wrangler login
    ```
-3. Simpan API Token Mailketing Anda sebagai secret (ambil dari dashboard Mailketing **Pengaturan → API Email**):
+3. Simpan API Key Brevo Anda sebagai secret (ambil dari dashboard Brevo **SMTP & API → API Keys → Generate a new API key**):
    ```powershell
-   npx wrangler secret put MAILKETING_API_TOKEN
+   npx wrangler secret put BREVO_API_KEY
    ```
-   *(Opsional jika ingin fallback ke Zoho CPaaS: ubah `"MAIL_PROVIDER": "ZOHO"` di `wrangler.jsonc` dan jalankan `npx wrangler secret put ZOHO_API_KEY`.)*
+   *(Opsional fallback: ubah `"MAIL_PROVIDER"` di `wrangler.jsonc` menjadi `"MAILKETING"` dengan secret `MAILKETING_API_TOKEN`, atau `"ZOHO"` dengan secret `ZOHO_API_KEY`.)*
 4. Deploy Worker:
    ```powershell
    npx wrangler deploy
@@ -35,8 +35,9 @@ Worker ini menggantikan `script.google.com` dengan kapasitas paket gratis Cloudf
    ```
 
 ## Variabel Opsional (`wrangler.jsonc`)
-- `MAIL_PROVIDER`: `MAILKETING` (default) atau `ZOHO`
+- `MAIL_PROVIDER`: `BREVO` (default), `MAILKETING`, atau `ZOHO`
+- `BREVO_API_URL`: default `https://api.brevo.com/v3/smtp/email`
 - `MAILKETING_API_URL`: default `https://api.mailketing.co.id/api/v2/send`
 - `SENDER_EMAIL`: default `noreply@pemira-fikui.my.id`
-- `SENDER_NAME`: default `Panitia PERMIRA 2026`
+- `SENDER_NAME`: default `PANITIA PEMIRA IKM FIK UI 2026`
 - `ALLOWED_EMAIL_DOMAIN`: kosongkan untuk semua domain, atau isi misalnya `ui.ac.id`

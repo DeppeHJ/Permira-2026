@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { TriangleAlert } from 'lucide-react'
 import { auth, isFirebaseConfigured } from './firebase'
 import { Spinner, ToastNotification, TopNav } from './components/SharedUI'
+import BallotPrivacyShield from './components/BallotPrivacyShield'
 import { useElection } from './context/electionContext'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminLoginPage from './pages/AdminLoginPage'
@@ -507,6 +508,10 @@ export default function App() {
           onNavigate={navigate}
         />
       )
+    }
+
+    if (page === 'voteAI' || page === 'voteKabem' || page === 'review') {
+      screen = <BallotPrivacyShield voter={activeVoter}>{screen}</BallotPrivacyShield>
     }
 
     content = (

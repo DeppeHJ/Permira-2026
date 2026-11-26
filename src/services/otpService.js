@@ -71,3 +71,10 @@ export async function verifyOtp({ npm, otp }) {
   if (!result?.success) throw new Error(result?.message || 'Kode OTP tidak valid.')
   return result
 }
+
+/** Reset batas pengiriman OTP untuk satu NPM (khusus Admin Panitia yang sedang masuk). */
+export async function resetOtpLimit(npm) {
+  const result = await callScript({ action: 'reset', npm })
+  if (!result?.success) throw new Error(result?.message || 'Gagal mereset batas OTP.')
+  return result
+}

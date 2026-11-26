@@ -40,6 +40,7 @@ import {
   syncStats,
   tallyVotes,
 } from '../services/adminService'
+import { resetOtpLimit } from '../services/otpService'
 import { parseDptCsv } from '../utils/dpt'
 import { formatDateTime, percent } from '../utils/format'
 
@@ -107,6 +108,7 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
   const [importing, setImporting] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [syncing, setSyncing] = useState(false)
+  const [resettingNpm, setResettingNpm] = useState('')
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -255,6 +257,27 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
       showToast({ type: 'error', title: 'Sinkronisasi gagal', message: 'Coba lagi beberapa saat.' })
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleResetOtp = async (record) => {
+    if (resettingNpm) return
+    setResettingNpm(record.npm)
+    try {
+      const result = await resetOtpLimit(record.npm)
+      showToast({
+        type: 'success',
+        title: 'Batas OTP direset',
+        message: result.message || `Batas OTP untuk ${record.npm} (${record.nama}) telah direset.`,
+      })
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Reset OTP gagal',
+        message: error.message || 'Coba lagi beberapa saat.',
+      })
+    } finally {
+      setResettingNpm('')
     }
   }
 
@@ -647,14 +670,15 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead>
                 <tr className="border-b border-gold/20 text-xs uppercase tracking-wider text-gold/60">
                   <th className="py-3 pr-4 font-semibold">NPM</th>
                   <th className="py-3 pr-4 font-semibold">Nama</th>
                   <th className="py-3 pr-4 font-semibold">Angkatan</th>
                   <th className="py-3 pr-4 font-semibold">Status</th>
-                  <th className="py-3 font-semibold">Waktu Memilih</th>
+                  <th className="py-3 pr-4 font-semibold">Waktu Memilih</th>
+                  <th className="py-3 text-right font-semibold">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -672,12 +696,32 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
                         {r.hasVoted ? 'Sudah Memilih' : 'Belum Memilih'}
                       </span>
                     </td>
-                    <td className="py-3 text-gold/70">{formatDateTime(r.votedAt)}</td>
+                    <td className="py-3 pr-4 text-gold/70">{formatDateTime(r.votedAt)}</td>
+                    <td className="py-3 text-right">
+                      {!r.hasVoted ? (
+                        <button
+                          type="button"
+                          onClick={() => handleResetOtp(r)}
+                          disabled={Boolean(resettingNpm)}
+                          title={`Reset batas permintaan OTP untuk ${r.nama}`}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gold/30 px-2.5 text-xs font-semibold text-gold transition-colors hover:bg-gold hover:text-card-dark disabled:opacity-50"
+                        >
+                          {resettingNpm === r.npm ? (
+                            <Spinner className="h-3.5 w-3.5" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                          )}
+                          Reset OTP
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gold/40">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {pageRows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-gold/60">
+                    <td colSpan={6} className="py-10 text-center text-gold/60">
                       {dptReady ? 'Belum ada data pemilih. Unggah berkas CSV DPT untuk memulai.' : 'Memuat data DPT…'}
                     </td>
                   </tr>

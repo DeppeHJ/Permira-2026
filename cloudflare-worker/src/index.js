@@ -10,6 +10,10 @@ const MAX_ATTEMPTS = 5
 const SEND_WINDOW_MS = 6 * 60 * 60 * 1000
 const MAX_SENDS_PER_WINDOW = 5
 
+const DEFAULT_SENDER_EMAIL = 'noreply@pemira-fikui.my.id'
+const DEFAULT_SENDER_NAME = 'PANITIA PEMIRA IKM FIK UI 2026'
+const OTP_EMAIL_SUBJECT = 'Kode OTP PEMIRA IKM FIK UI 2026'
+
 function isAllowedOrigin(origin, env) {
   if (!origin) return false
   if (env.ALLOWED_ORIGINS) {
@@ -85,17 +89,23 @@ function sanitizeDisplayName(raw) {
 }
 
 function buildHtml(nama, otp) {
-  return `<html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#3D1203;font-family:Arial,Helvetica,sans-serif;"><div style="font-family:Arial,Helvetica,sans-serif;background:#3D1203;padding:32px 16px;"><div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;"><div style="background:#BA3D03;color:#ffffff;padding:20px 24px;font-size:20px;font-weight:bold;letter-spacing:1px;">PERMIRA 2026</div><div style="padding:28px 24px;color:#1F110B;"><p style="font-size:15px;margin:0 0 12px;">Halo <b>${nama}</b>,</p><p style="font-size:14px;color:#4A3B32;margin:0 0 20px;line-height:1.5;">Berikut adalah kode One-Time Password (OTP) resmi Anda untuk memverifikasi bilik suara:</p><div style="text-align:center;background:#FFF4E0;border:2px dashed #BA3D03;border-radius:12px;padding:18px 0;margin:20px 0;"><span style="font-size:38px;font-weight:bold;letter-spacing:10px;color:#3D1203;font-family:monospace;">${otp}</span></div><p style="font-size:12px;color:#856B5D;line-height:1.5;margin:16px 0 0;">Kode ini berlaku <b>3 menit (${OTP_TTL_SECONDS} detik)</b> dan hanya dapat dipakai satu kali. <b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.</p></div><div style="background:#F7F4F0;padding:14px 24px;text-align:center;font-size:11px;color:#856B5D;border-top:1px solid #ECE7E1;">Panitia Pemilihan Raya Mahasiswa &bull; Sistem E-Voting Resmi</div></div></div></body></html>`
+  return `<html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#3D1203;font-family:Arial,Helvetica,sans-serif;"><div style="font-family:Arial,Helvetica,sans-serif;background:#3D1203;padding:32px 16px;"><div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;"><div style="background:#BA3D03;color:#ffffff;padding:20px 24px;font-size:20px;font-weight:bold;letter-spacing:1px;">PEMIRA IKM FIK UI 2026</div><div style="padding:28px 24px;color:#1F110B;"><p style="font-size:15px;margin:0 0 12px;">Halo <b>${nama}</b>,</p><p style="font-size:14px;color:#4A3B32;margin:0 0 20px;line-height:1.5;">Berikut adalah kode One-Time Password (OTP) resmi Anda untuk memverifikasi bilik suara:</p><div style="text-align:center;background:#FFF4E0;border:2px dashed #BA3D03;border-radius:12px;padding:18px 0;margin:20px 0;"><span style="font-size:38px;font-weight:bold;letter-spacing:10px;color:#3D1203;font-family:monospace;">${otp}</span></div><p style="font-size:12px;color:#856B5D;line-height:1.5;margin:16px 0 0;">Kode ini berlaku <b>3 menit (${OTP_TTL_SECONDS} detik)</b> dan hanya dapat dipakai satu kali. <b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.</p></div><div style="background:#F7F4F0;padding:14px 24px;text-align:center;font-size:11px;color:#856B5D;border-top:1px solid #ECE7E1;">PANITIA PEMIRA IKM FIK UI 2026 &bull; Sistem E-Voting Resmi</div></div></div></body></html>`
+}
+
+function getFirestoreBaseUrl(env) {
+  const projectId = String(env.FIREBASE_PROJECT_ID || '').trim()
+  return projectId
+    ? `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents`
+    : ''
 }
 
 async function resolveVoterFromDpt(npm, idToken, env) {
-  const projectId = String(env.FIREBASE_PROJECT_ID || '').trim()
-  if (!projectId) {
+  const baseUrl = getFirestoreBaseUrl(env)
+  if (!baseUrl) {
     return { ok: false, status: 500, message: 'FIREBASE_PROJECT_ID belum dikonfigurasi.' }
   }
 
-  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/dpt/${encodeURIComponent(npm)}`
-  const res = await fetch(url, {
+  const res = await fetch(`${baseUrl}/dpt/${encodeURIComponent(npm)}`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${idToken}` },
   })
@@ -131,6 +141,31 @@ async function resolveVoterFromDpt(npm, idToken, env) {
   return { ok: true, email, nama }
 }
 
+/**
+ * Verifikasi Admin Panitia: hanya admin sesuai firestore.rules (`allow list: if isAdmin()`)
+ * yang diizinkan membaca daftar koleksi `dpt`.
+ */
+async function verifyAdminToken(idToken, env) {
+  const baseUrl = getFirestoreBaseUrl(env)
+  if (!baseUrl) {
+    return { ok: false, status: 500, message: 'FIREBASE_PROJECT_ID belum dikonfigurasi.' }
+  }
+
+  const res = await fetch(`${baseUrl}/dpt?pageSize=1`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+
+  if (res.status === 401 || res.status === 403) {
+    return { ok: false, status: 403, message: 'Hanya Admin Panitia yang berhak mereset batas OTP.' }
+  }
+  if (!res.ok) {
+    return { ok: false, status: 502, message: `Gagal memverifikasi otorisasi Admin (HTTP ${res.status}).` }
+  }
+
+  return { ok: true }
+}
+
 async function sendViaZoho({ toEmail, toName, otp, env }) {
   const rawKey = String(env.ZOHO_API_KEY || '').trim()
   if (!rawKey) {
@@ -139,8 +174,8 @@ async function sendViaZoho({ toEmail, toName, otp, env }) {
 
   const authHeader = /^Zoho-enczapikey\s+/i.test(rawKey) ? rawKey : `Zoho-enczapikey ${rawKey}`
   const endpoint = String(env.ZOHO_API_URL || 'https://cpaas.zoho.com/v1.1/email').trim()
-  const senderEmail = String(env.SENDER_EMAIL || 'noreply@pemira-fikui.my.id').trim()
-  const senderName = String(env.SENDER_NAME || 'Panitia PERMIRA 2026').trim()
+  const senderEmail = String(env.SENDER_EMAIL || DEFAULT_SENDER_EMAIL).trim()
+  const senderName = String(env.SENDER_NAME || DEFAULT_SENDER_NAME).trim()
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -162,7 +197,7 @@ async function sendViaZoho({ toEmail, toName, otp, env }) {
           },
         },
       ],
-      subject: 'Kode OTP PERMIRA 2026',
+      subject: OTP_EMAIL_SUBJECT,
       htmlbody: buildHtml(toName, otp),
     }),
   })
@@ -172,6 +207,16 @@ async function sendViaZoho({ toEmail, toName, otp, env }) {
     console.error('Zoho CPaaS error:', res.status, bodyText)
     throw new Error(`Zoho CPaaS HTTP ${res.status}`)
   }
+}
+
+function buildText(nama, otp) {
+  return [
+    `Halo ${nama},`,
+    '',
+    `Kode OTP PEMIRA IKM FIK UI 2026 Anda: ${otp}`,
+    `Berlaku 3 menit (${OTP_TTL_SECONDS} detik) dan hanya dapat dipakai satu kali.`,
+    'Jangan pernah membagikan kode ini kepada siapa pun, termasuk pihak panitia.',
+  ].join('\n')
 }
 
 function extractApiErrorDetail(parsed) {
@@ -190,7 +235,21 @@ function extractApiErrorDetail(parsed) {
       .join('; ')
     if (first) parts.push(first)
   }
+  if (parts.length === 0 && typeof parsed.code === 'string' && parsed.code.trim()) {
+    parts.push(parsed.code.trim())
+  }
   return parts.join(' - ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140)
+}
+
+async function readApiResponse(res) {
+  const rawBody = await res.text().catch(() => '')
+  let parsed
+  try {
+    parsed = rawBody ? JSON.parse(rawBody) : null
+  } catch {
+    parsed = null
+  }
+  return { rawBody, parsed }
 }
 
 async function sendViaMailketing({ toEmail, toName, otp, env }) {
@@ -199,8 +258,8 @@ async function sendViaMailketing({ toEmail, toName, otp, env }) {
     .replace(/^Bearer\s+/i, '')
     .trim()
   const endpoint = String(env.MAILKETING_API_URL || 'https://api.mailketing.co.id/api/v2/send').trim()
-  const senderEmail = String(env.SENDER_EMAIL || 'noreply@pemira-fikui.my.id').trim()
-  const senderName = String(env.SENDER_NAME || 'Panitia PERMIRA 2026').trim()
+  const senderEmail = String(env.SENDER_EMAIL || DEFAULT_SENDER_EMAIL).trim()
+  const senderName = String(env.SENDER_NAME || DEFAULT_SENDER_NAME).trim()
 
   if (!token) {
     throw new Error('MAILKETING_API_TOKEN belum dikonfigurasi')
@@ -216,20 +275,13 @@ async function sendViaMailketing({ toEmail, toName, otp, env }) {
     body: JSON.stringify({
       from_name: senderName,
       from_email: senderEmail,
-      subject: 'Kode OTP PERMIRA 2026',
+      subject: OTP_EMAIL_SUBJECT,
       recipient: toEmail,
       content: buildHtml(toName, otp),
     }),
   })
 
-  const rawBody = await res.text().catch(() => '')
-  let parsed
-  try {
-    parsed = rawBody ? JSON.parse(rawBody) : null
-  } catch {
-    parsed = null
-  }
-
+  const { rawBody, parsed } = await readApiResponse(res)
   if (!res.ok || parsed?.success === false) {
     console.error('Mailketing API error:', res.status, rawBody)
     const detail = extractApiErrorDetail(parsed)
@@ -237,12 +289,61 @@ async function sendViaMailketing({ toEmail, toName, otp, env }) {
   }
 }
 
-async function sendOtpEmail({ toEmail, toName, otp, env }) {
-  const provider = String(env.MAIL_PROVIDER || 'MAILKETING').trim().toUpperCase()
-  if (provider === 'ZOHO') {
-    return sendViaZoho({ toEmail, toName, otp, env })
+async function sendViaBrevo({ toEmail, toName, otp, env }) {
+  const apiKey = String(env.BREVO_API_KEY || '').trim()
+  const endpoint = String(env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email').trim()
+  const senderEmail = String(env.SENDER_EMAIL || DEFAULT_SENDER_EMAIL).trim()
+  const senderName = String(env.SENDER_NAME || DEFAULT_SENDER_NAME).trim()
+
+  if (!apiKey) {
+    throw new Error('BREVO_API_KEY belum dikonfigurasi')
   }
-  return sendViaMailketing({ toEmail, toName, otp, env })
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'api-key': apiKey,
+    },
+    body: JSON.stringify({
+      sender: {
+        name: senderName,
+        email: senderEmail,
+      },
+      to: [
+        {
+          email: toEmail,
+          name: toName,
+        },
+      ],
+      subject: OTP_EMAIL_SUBJECT,
+      htmlContent: buildHtml(toName, otp),
+      textContent: buildText(toName, otp),
+    }),
+  })
+
+  if (!res.ok) {
+    const { rawBody, parsed } = await readApiResponse(res)
+    console.error('Brevo API error:', res.status, rawBody)
+    const detail = extractApiErrorDetail(parsed)
+    throw new Error(`Brevo HTTP ${res.status}${detail ? `: ${detail}` : ''}`)
+  }
+}
+
+const MAIL_PROVIDERS = {
+  BREVO: { label: 'Brevo', send: sendViaBrevo },
+  MAILKETING: { label: 'Mailketing', send: sendViaMailketing },
+  ZOHO: { label: 'Zoho CPaaS', send: sendViaZoho },
+}
+
+function resolveMailProvider(env) {
+  const key = String(env.MAIL_PROVIDER || 'BREVO').trim().toUpperCase()
+  return MAIL_PROVIDERS[key] || MAIL_PROVIDERS.BREVO
+}
+
+async function sendOtpEmail({ toEmail, toName, otp, env }) {
+  return resolveMailProvider(env).send({ toEmail, toName, otp, env })
 }
 
 /**
@@ -355,6 +456,11 @@ export class OtpSession extends DurableObject {
   async alarm() {
     await this.ctx.storage.deleteAll()
   }
+
+  async resetLimit() {
+    await this.ctx.storage.deleteAll()
+    return { ok: true }
+  }
 }
 
 export default {
@@ -364,10 +470,8 @@ export default {
     }
 
     if (request.method === 'GET') {
-      const provider = String(env.MAIL_PROVIDER || 'MAILKETING').trim().toUpperCase() === 'ZOHO'
-        ? 'Zoho CPaaS'
-        : 'Mailketing'
-      return jsonResponse(request, env, 200, true, `PERMIRA 2026 OTP service aktif (Cloudflare + ${provider}).`)
+      const provider = resolveMailProvider(env).label
+      return jsonResponse(request, env, 200, true, `PEMIRA IKM FIK UI 2026 OTP service aktif (Cloudflare + ${provider}).`)
     }
 
     if (request.method !== 'POST') {
@@ -440,6 +544,16 @@ export default {
 
       const result = await stub.verifyOtp({ npm, inputOtp })
       return jsonResponse(request, env, result.status, result.ok, result.message)
+    }
+
+    if (action === 'reset') {
+      const auth = await verifyAdminToken(idToken, env)
+      if (!auth.ok) {
+        return jsonResponse(request, env, auth.status, false, auth.message)
+      }
+
+      await stub.resetLimit()
+      return jsonResponse(request, env, 200, true, `Batas pengiriman OTP untuk NPM ${npm} telah direset.`)
     }
 
     return jsonResponse(request, env, 400, false, 'Aksi tidak dikenali.')

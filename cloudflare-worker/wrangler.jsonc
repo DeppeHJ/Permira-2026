@@ -5,11 +5,12 @@
   "compatibility_date": "2026-03-01",
   "vars": {
     "FIREBASE_PROJECT_ID": "permira-ui",
-    "MAIL_PROVIDER": "MAILKETING",
+    "MAIL_PROVIDER": "BREVO",
+    "BREVO_API_URL": "https://api.brevo.com/v3/smtp/email",
     "MAILKETING_API_URL": "https://api.mailketing.co.id/api/v2/send",
     "ZOHO_API_URL": "https://cpaas.zoho.com/v1.1/email",
     "SENDER_EMAIL": "noreply@pemira-fikui.my.id",
-    "SENDER_NAME": "Panitia PERMIRA 2026",
+    "SENDER_NAME": "PANITIA PEMIRA IKM FIK UI 2026",
     "ALLOWED_EMAIL_DOMAIN": ""
   },
   "durable_objects": {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Headphones, Lock, Mail, Pencil, ShieldCheck, Timer } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Headphones, Lock, Mail, Pencil, ShieldCheck, Timer } from 'lucide-react'
 import { CandidatePhoto, Spinner, Stepper } from '../components/SharedUI'
 import { OTP_RESEND_SECONDS, OTP_TTL_SECONDS } from '../config'
 import { useElection } from '../context/electionContext'
@@ -7,6 +7,32 @@ import { formatCountdown, maskEmail } from '../utils/format'
 
 const OTP_LENGTH = 6
 const EMPTY_DIGITS = Array.from({ length: OTP_LENGTH }, () => '')
+
+function MaskedSummaryRow({ label, onEdit }) {
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-amber-200/70 bg-amber-50/60 p-4">
+      <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl border border-amber-200 bg-amber-100/70 text-brand/70">
+        <EyeOff className="h-6 w-6" aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">{label}</p>
+        <p className="mt-0.5 select-none text-base font-extrabold tracking-widest text-ink/50">
+          &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;
+        </p>
+        <p className="text-xs font-medium text-ink-soft">
+          Disembunyikan untuk menjaga kerahasiaan pilihan
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-brand/40 px-3 text-sm font-bold text-brand transition-colors hover:bg-amber-100"
+      >
+        <Pencil className="h-4 w-4" aria-hidden="true" /> Ubah
+      </button>
+    </div>
+  )
+}
 
 function SummaryRow({ label, candidate, onEdit }) {
   if (!candidate) return null
@@ -49,8 +75,36 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [shakeKey, setShakeKey] = useState(0)
+  const [showSummary, setShowSummary] = useState(false)
   const inputRefs = useRef([])
   const usedCodesRef = useRef(new Set())
+
+  // Hanya tampil saat tombol ditahan; langsung sembunyi saat dilepas, multi-sentuh, atau keluar fokus.
+  useEffect(() => {
+    if (!showSummary) return undefined
+    const hide = () => setShowSummary(false)
+    const handleMultiTouch = (e) => {
+      if ((e.touches?.length || 0) > 1) hide()
+    }
+    window.addEventListener('pointerup', hide)
+    window.addEventListener('pointercancel', hide)
+    window.addEventListener('mouseup', hide)
+    window.addEventListener('touchend', hide)
+    window.addEventListener('touchcancel', hide)
+    window.addEventListener('touchstart', handleMultiTouch, { passive: true })
+    window.addEventListener('blur', hide)
+    document.addEventListener('visibilitychange', hide)
+    return () => {
+      window.removeEventListener('pointerup', hide)
+      window.removeEventListener('pointercancel', hide)
+      window.removeEventListener('mouseup', hide)
+      window.removeEventListener('touchend', hide)
+      window.removeEventListener('touchcancel', hide)
+      window.removeEventListener('touchstart', handleMultiTouch)
+      window.removeEventListener('blur', hide)
+      document.removeEventListener('visibilitychange', hide)
+    }
+  }, [showSummary])
 
   // Detak 1 detik untuk hitung mundur OTP & jeda kirim ulang.
   useEffect(() => {
@@ -118,6 +172,7 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
 
   const handleSend = async () => {
     if (sending || cooldownLeft > 0) return
+    setShowSummary(false)
     setSending(true)
     setError('')
     try {
@@ -188,17 +243,82 @@ export default function ReviewOtpPage({ voter, selections, onBack, onEdit, onSen
 
           <div className="space-y-8 p-6 text-ink">
             <div className="space-y-3">
-              <h2 className="text-lg font-bold text-brand">Ringkasan Pilihan</h2>
-              <SummaryRow
-                label="Anggota Independen (AI)"
-                candidate={getCandidate(selections.aiId)}
-                onEdit={() => onEdit('voteAI')}
-              />
-              <SummaryRow
-                label="Ketua & Wakil Ketua BEM"
-                candidate={getCandidate(selections.kabemId)}
-                onEdit={() => onEdit('voteKabem')}
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-lg font-bold text-brand">Ringkasan Pilihan</h2>
+                  <p className="text-xs text-ink-soft">
+                    Tekan dan tahan tombol untuk melihat pilihan; lepaskan untuk menyembunyikan.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="btn-toggle-summary"
+                  aria-pressed={showSummary}
+                  onPointerDown={(e) => {
+                    if (e.pointerType !== 'mouse' || e.button === 0) {
+                      e.preventDefault()
+                      setShowSummary(true)
+                    }
+                  }}
+                  onPointerUp={() => setShowSummary(false)}
+                  onPointerCancel={() => setShowSummary(false)}
+                  onPointerLeave={() => setShowSummary(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault()
+                      setShowSummary(true)
+                    }
+                  }}
+                  onKeyUp={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      setShowSummary(false)
+                    }
+                  }}
+                  onBlur={() => setShowSummary(false)}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className={`inline-flex h-9 touch-none select-none items-center gap-1.5 rounded-lg border px-3 text-xs font-bold transition-colors ${
+                    showSummary
+                      ? 'border-brand bg-brand text-white'
+                      : 'border-brand/35 bg-amber-50 text-brand hover:bg-amber-100'
+                  }`}
+                >
+                  {showSummary ? (
+                    <>
+                      <Eye className="h-4 w-4" aria-hidden="true" /> Lepas untuk Sembunyikan
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" aria-hidden="true" /> Tahan Lihat Pilihan
+                    </>
+                  )}
+                </button>
+              </div>
+              {[
+                {
+                  key: 'ai',
+                  label: 'Anggota Independen (AI)',
+                  candidate: getCandidate(selections.aiId),
+                  step: 'voteAI',
+                },
+                {
+                  key: 'kabem',
+                  label: 'Ketua & Wakil Ketua BEM',
+                  candidate: getCandidate(selections.kabemId),
+                  step: 'voteKabem',
+                },
+              ].map(({ key, label, candidate, step }) => {
+                if (!candidate) return null
+                return showSummary ? (
+                  <SummaryRow
+                    key={key}
+                    label={label}
+                    candidate={candidate}
+                    onEdit={() => onEdit(step)}
+                  />
+                ) : (
+                  <MaskedSummaryRow key={key} label={label} onEdit={() => onEdit(step)} />
+                )
+              })}
             </div>
 
             <div className="space-y-4 border-t border-amber-200/70 pt-6">
