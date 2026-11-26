@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { BATCH_CHUNK_SIZE } from '../config'
-import { AI_CANDIDATES, KABEM_CANDIDATES } from '../data'
+import { AI_CANDIDATES, KABEM_CANDIDATES, KOTAK_KOSONG_ID } from '../data'
 import { fromCandidateForm, toCandidateForm } from '../utils/candidates'
 import { downloadCsv, toCsv } from '../utils/csv'
 import { downloadAttendanceReport, syncStats } from './adminService'
@@ -35,6 +35,20 @@ export async function saveElectionSettings({ name, year, angkatanCount, descript
     payload.description = description
   }
   await setDoc(doc(db, 'config', 'election'), payload, { merge: true })
+}
+
+export async function saveKotakKosongSettings({ enabled, description }) {
+  await setDoc(
+    doc(db, 'config', 'election'),
+    {
+      kotakKosong: {
+        enabled: Boolean(enabled),
+        description: String(description || '').trim(),
+      },
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
 }
 
 /* -------------------------------------------------------------------------- */
@@ -133,7 +147,7 @@ export async function resyncStatsFromDpt(angkatan) {
 }
 
 /** Unduh cadangan: laporan kehadiran + rekap perolehan suara per kandidat. */
-export async function downloadElectionBackup({ appName, candidates }) {
+export async function downloadElectionBackup({ appName, candidates, kotakKosongKabem }) {
   const [records, votesSnap] = await Promise.all([fetchDptRecords(), getDocs(collection(db, 'votes'))])
 
   const tally = { ai: {}, kabem: {} }
@@ -149,6 +163,10 @@ export async function downloadElectionBackup({ appName, candidates }) {
     c.name,
     tally[c.type][c.id] || 0,
   ])
+  const emptyVotes = tally.kabem[KOTAK_KOSONG_ID] || 0
+  if (kotakKosongKabem || emptyVotes > 0) {
+    rows.push(['Ketua & Wakil BEM', '-', 'Kotak Kosong', emptyVotes])
+  }
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const slug = String(appName).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 

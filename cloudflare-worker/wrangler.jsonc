@@ -5,6 +5,8 @@
   "compatibility_date": "2026-03-01",
   "vars": {
     "FIREBASE_PROJECT_ID": "permira-ui",
+    "MAIL_PROVIDER": "MAILKETING",
+    "MAILKETING_API_URL": "https://api.mailketing.co.id/api/v2/send",
     "ZOHO_API_URL": "https://cpaas.zoho.com/v1.1/email",
     "SENDER_EMAIL": "noreply@pemira-fikui.my.id",
     "SENDER_NAME": "Panitia PERMIRA 2026",

@@ -237,9 +237,30 @@ export const KABEM_CANDIDATES = [
   },
 ]
 
+export const KOTAK_KOSONG_ID = 'bem-kotak-kosong'
+
+/** Opsi Kotak Kosong bawaan untuk pemilihan Ketua & Wakil Ketua BEM. */
+export const DEFAULT_KOTAK_KOSONG = {
+  id: KOTAK_KOSONG_ID,
+  type: 'kabem',
+  isKotakKosong: true,
+  enabled: true,
+  number: '',
+  name: 'Kotak Kosong',
+  role: 'Tidak Memilih Paslon BEM',
+  study: '',
+  photo: '',
+  tagline:
+    'Dipilih apabila pemilih tidak berkenan memberikan suara kepada pasangan calon Ketua dan Wakil Ketua BEM FIK UI 2027.',
+  visi: '',
+  misi: [],
+  programs: [],
+}
+
 export const ALL_CANDIDATES = [...AI_CANDIDATES, ...KABEM_CANDIDATES]
 
-export const getCandidate = (id) => ALL_CANDIDATES.find((c) => c.id === id) || null
+export const getCandidate = (id) =>
+  id === KOTAK_KOSONG_ID ? DEFAULT_KOTAK_KOSONG : ALL_CANDIDATES.find((c) => c.id === id) || null
 
 /** Konfigurasi tiap tahap pemilihan. */
 export const VOTING_STEPS = {

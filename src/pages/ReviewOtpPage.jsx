@@ -12,19 +12,25 @@ function SummaryRow({ label, candidate, onEdit }) {
   if (!candidate) return null
   return (
     <div className="flex items-center gap-4 rounded-xl border border-amber-200/70 bg-amber-50/60 p-4">
-      <CandidatePhoto
-        src={candidate.photo}
-        className="h-16 w-16 shrink-0 rounded-xl border border-amber-200 object-cover"
-      />
+      {!candidate.isKotakKosong && (
+        <CandidatePhoto
+          src={candidate.photo}
+          className="h-16 w-16 shrink-0 rounded-xl border border-amber-200 object-cover"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">{label}</p>
         <p className="truncate text-lg font-extrabold text-ink">{candidate.name}</p>
-        <p className="text-sm font-semibold text-brand">Nomor Urut {candidate.number}</p>
+        {candidate.isKotakKosong ? (
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-soft">{candidate.tagline}</p>
+        ) : (
+          <p className="text-sm font-semibold text-brand">Nomor Urut {candidate.number}</p>
+        )}
       </div>
       <button
         type="button"
         onClick={onEdit}
-        className="flex h-10 items-center gap-1.5 rounded-lg border border-brand/40 px-3 text-sm font-bold text-brand transition-colors hover:bg-amber-100"
+        className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-brand/40 px-3 text-sm font-bold text-brand transition-colors hover:bg-amber-100"
       >
         <Pencil className="h-4 w-4" aria-hidden="true" /> Ubah
       </button>

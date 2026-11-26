@@ -24,20 +24,35 @@ async function callScript(payload) {
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
-    const response = await fetch(OTP_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...payload, idToken }),
-      redirect: 'follow',
-      signal: controller.signal,
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    return await response.json()
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error('Permintaan ke layanan OTP melewati batas waktu. Coba lagi.', { cause: error })
+    let response
+    try {
+      response = await fetch(OTP_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ ...payload, idToken }),
+        redirect: 'follow',
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Permintaan ke layanan OTP melewati batas waktu. Coba lagi.', { cause: error })
+      }
+      throw new Error('Tidak dapat menghubungi layanan OTP. Periksa koneksi internet Anda.', { cause: error })
     }
-    throw new Error('Tidak dapat menghubungi layanan OTP. Periksa koneksi internet Anda.', { cause: error })
+
+    const data = await response.json().catch((err) => {
+      if (err?.name === 'AbortError') {
+        throw new Error('Permintaan ke layanan OTP melewati batas waktu. Coba lagi.', { cause: err })
+      }
+      return null
+    })
+    if (!response.ok) {
+      throw new Error(data?.message || `Layanan OTP bermasalah (HTTP ${response.status}).`)
+    }
+    if (!data || typeof data !== 'object') {
+      throw new Error('Respons layanan OTP tidak valid.')
+    }
+    return data
   } finally {
     clearTimeout(timer)
   }

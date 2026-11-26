@@ -53,7 +53,7 @@ service cloud.firestore {
         || candidateOfType(id, 'ai');
     }
     function validKabemId(id) {
-      return id in ['bem-01', 'bem-02']
+      return id in ['bem-01', 'bem-02', 'bem-kotak-kosong']
         || candidateOfType(id, 'kabem');
     }
 

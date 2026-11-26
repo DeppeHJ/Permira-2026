@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Crown, Pencil, Plus, Trash2, Users } from 'lucide-react'
-import { CandidatePhoto } from '../../components/SharedUI'
+import { Crown, Pencil, Plus, SquareDashedBottom, Trash2, Users } from 'lucide-react'
+import { CandidatePhoto, Spinner } from '../../components/SharedUI'
 import { useElection } from '../../context/electionContext'
-import { deleteCandidate, saveCandidate } from '../../services/superAdminService'
+import { DEFAULT_KOTAK_KOSONG } from '../../data'
+import { deleteCandidate, saveCandidate, saveKotakKosongSettings } from '../../services/superAdminService'
 import {
   CANDIDATE_TYPES,
   emptyCandidateForm,
@@ -10,8 +11,8 @@ import {
   toCandidateForm,
 } from '../../utils/candidates'
 import CandidateEditor from './CandidateEditor'
-import { btnPrimary, iconBtn } from './styles'
-import { Card, ConfirmDialog } from './ui'
+import { btnPrimary, iconBtn, textareaClass } from './styles'
+import { Card, ConfirmDialog, Field } from './ui'
 
 const nextNumber = (list) => {
   const max = list.reduce((acc, c) => Math.max(acc, Number(c.number) || 0), 0)
@@ -53,10 +54,13 @@ function CandidateRow({ candidate, onEdit, onDelete }) {
 }
 
 export default function CandidatesPanel({ showToast }) {
-  const { aiCandidates, kabemCandidates, usingDefaultCandidates } = useElection()
+  const { aiCandidates, kabemCandidates, usingDefaultCandidates, kotakKosongConfig } = useElection()
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [kkEnabled, setKkEnabled] = useState(kotakKosongConfig.enabled)
+  const [kkDescription, setKkDescription] = useState(kotakKosongConfig.description)
+  const [savingKk, setSavingKk] = useState(false)
 
   const openNew = (type) => {
     const list = type === 'ai' ? aiCandidates : kabemCandidates
@@ -141,6 +145,91 @@ export default function CandidatesPanel({ showToast }) {
           )}
         </Card>
       ))}
+
+      <Card
+        icon={SquareDashedBottom}
+        title="Kotak Kosong (Ketua & Wakil Ketua BEM)"
+        description="Opsi tanpa foto dan tanpa nomor kandidat bagi pemilih yang tidak berkenan memilih paslon BEM."
+      >
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault()
+            const cleanDesc = kkDescription.trim()
+            if (kkEnabled && cleanDesc.length < 10) {
+              showToast({
+                type: 'error',
+                title: 'Keterangan terlalu singkat',
+                message: 'Isi keterangan Kotak Kosong minimal 10 karakter.',
+              })
+              return
+            }
+            setSavingKk(true)
+            try {
+              await saveKotakKosongSettings({
+                enabled: kkEnabled,
+                description: cleanDesc || DEFAULT_KOTAK_KOSONG.tagline,
+              })
+              showToast({
+                type: 'success',
+                title: 'Pengaturan Kotak Kosong disimpan',
+                message: kkEnabled ? 'Kotak Kosong tampil di bilik suara BEM.' : 'Kotak Kosong disembunyikan.',
+              })
+            } catch (error) {
+              failToast('Gagal menyimpan pengaturan Kotak Kosong', error)
+            } finally {
+              setSavingKk(false)
+            }
+          }}
+          className="space-y-4"
+        >
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gold/20 bg-bean/50 p-3.5">
+            <input
+              type="checkbox"
+              checked={kkEnabled}
+              onChange={(event) => setKkEnabled(event.target.checked)}
+              className="h-4 w-4 accent-brand"
+            />
+            <span className="text-sm font-semibold text-white">
+              Tampilkan opsi Kotak Kosong pada pemilihan Ketua &amp; Wakil Ketua BEM
+            </span>
+          </label>
+
+          <Field label="Keterangan Kotak Kosong" htmlFor="kk-description">
+            <textarea
+              id="kk-description"
+              rows={2}
+              maxLength={300}
+              value={kkDescription}
+              onChange={(event) => setKkDescription(event.target.value)}
+              disabled={!kkEnabled}
+              className={textareaClass}
+            />
+          </Field>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setKkDescription(DEFAULT_KOTAK_KOSONG.tagline)}
+              disabled={!kkEnabled}
+              className="text-xs font-semibold text-gold/80 underline-offset-2 hover:text-gold hover:underline disabled:opacity-40"
+            >
+              Gunakan teks bawaan
+            </button>
+            <button
+              type="submit"
+              id="btn-save-kotak-kosong"
+              disabled={
+                savingKk ||
+                (kkEnabled === kotakKosongConfig.enabled &&
+                  kkDescription.trim() === kotakKosongConfig.description)
+              }
+              className={btnPrimary}
+            >
+              {savingKk && <Spinner className="h-4 w-4" />} Simpan Kotak Kosong
+            </button>
+          </div>
+        </form>
+      </Card>
 
       <p className="text-xs text-gold/55">
         Menghapus kandidat yang sudah menerima suara akan menghilangkan baris hasilnya dari grafik. Lakukan

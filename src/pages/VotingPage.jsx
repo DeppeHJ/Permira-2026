@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
-import { CandidateCard, CandidateModal, Stepper } from '../components/SharedUI'
+import { CandidateCard, CandidateModal, KotakKosongCard, Stepper } from '../components/SharedUI'
 import { useElection } from '../context/electionContext'
 
 /**
@@ -28,7 +28,7 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
         </p>
       </header>
 
-      {config.candidates.length === 0 && (
+      {config.candidates.length === 0 && !config.blankOption && (
         <p className="mt-8 rounded-2xl border border-gold/25 bg-card-dark p-6 text-center text-sm text-gold/80">
           Belum ada kandidat yang terdaftar untuk tahap ini. Hubungi Panitia.
         </p>
@@ -48,6 +48,14 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
             onChoose={(c) => onSelect(config.selectionKey, c.id)}
           />
         ))}
+        {config.blankOption && (
+          <KotakKosongCard
+            option={config.blankOption}
+            selected={selectedId === config.blankOption.id}
+            onChoose={(c) => onSelect(config.selectionKey, c.id)}
+            className={!isAi && config.candidates.length % 2 === 0 ? 'lg:col-span-2' : ''}
+          />
+        )}
       </div>
 
       {/* Bar aksi melekat di bawah */}
@@ -58,7 +66,12 @@ export default function VotingPage({ type, selections, onSelect, onNext, onBack 
               <>
                 <Check className="h-5 w-5 shrink-0 text-gold" aria-hidden="true" />
                 <span className="truncate">
-                  Pilihan: <strong className="text-gold">{selected.number}</strong> ·{' '}
+                  Pilihan:{' '}
+                  {selected.number && (
+                    <>
+                      <strong className="text-gold">{selected.number}</strong> ·{' '}
+                    </>
+                  )}
                   <strong className="text-white">{selected.name}</strong>
                 </span>
               </>

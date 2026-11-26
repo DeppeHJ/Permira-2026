@@ -105,6 +105,7 @@ export default function ElectionSettingsPanel({ showToast }) {
       const { voters, ballots } = await downloadElectionBackup({
         appName: election.appName,
         candidates: election.candidates,
+        kotakKosongKabem: election.kotakKosongKabem,
       })
       showToast({
         type: 'success',

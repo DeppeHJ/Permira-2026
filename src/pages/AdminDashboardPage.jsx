@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { BrandLogo, Spinner } from '../components/SharedUI'
 import { CSV_MAX_BYTES } from '../config'
+import { KOTAK_KOSONG_ID } from '../data'
 import { useElection } from '../context/electionContext'
 import {
   downloadAttendanceReport,
@@ -95,7 +96,7 @@ function KpiCard({ icon: Icon, label, value, hint, tone = 'dark' }) {
 }
 
 export default function AdminDashboardPage({ user, onLogout, showToast, isSuper = false }) {
-  const { angkatan, aiCandidates, kabemCandidates, appName } = useElection()
+  const { angkatan, aiCandidates, kabemCandidates, kotakKosongKabem, appName } = useElection()
   const [records, setRecords] = useState([])
   const [dptReady, setDptReady] = useState(false)
   const [ballots, setBallots] = useState([])
@@ -157,11 +158,25 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
   )
 
   const tally = useMemo(() => tallyVotes(ballots), [ballots])
-  const kabemData = kabemCandidates.map((c) => ({
-    name: `Paslon ${c.number}`,
-    detail: c.name,
-    value: tally.kabem[c.id] || 0,
-  }))
+  const kabemEmptyVotes = tally.kabem[KOTAK_KOSONG_ID] || 0
+  const kabemData = [
+    ...kabemCandidates.map((c) => ({
+      name: `Paslon ${c.number}`,
+      detail: c.name,
+      value: tally.kabem[c.id] || 0,
+      isKotakKosong: false,
+    })),
+    ...(kotakKosongKabem || kabemEmptyVotes > 0
+      ? [
+          {
+            name: 'Kotak Kosong',
+            detail: 'Tidak memilih paslon BEM',
+            value: kabemEmptyVotes,
+            isKotakKosong: true,
+          },
+        ]
+      : []),
+  ]
   const aiData = aiCandidates.map((c) => ({
     name: `${c.number} ${c.name.split(' ')[0]}`,
     detail: c.name,
@@ -344,7 +359,10 @@ export default function AdminDashboardPage({ user, onLogout, showToast, isSuper 
                     label={({ value }) => (value > 0 ? value : '')}
                   >
                     {kabemData.map((entry, index) => (
-                      <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      <Cell
+                        key={entry.name}
+                        fill={entry.isKotakKosong ? '#78716C' : CHART_COLORS[index % CHART_COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#E8C580' }} />

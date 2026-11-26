@@ -6,6 +6,7 @@ import {
   DEFAULT_CONTACTS,
   DEFAULT_ELECTION,
   DEFAULT_FAQS,
+  DEFAULT_KOTAK_KOSONG,
   ELECTION_TIMELINE,
   KABEM_CANDIDATES,
   SOP_TABS,
@@ -139,6 +140,17 @@ export default function ElectionProvider({ children }) {
     const timeline = Array.isArray(timelineDoc?.items) ? timelineDoc.items : ELECTION_TIMELINE
     const sop = Array.isArray(sopDoc?.tabs) && sopDoc.tabs.length > 0 ? sopDoc.tabs : SOP_TABS
 
+    const kotakKosongEnabled = electionDoc?.kotakKosong?.enabled !== false
+    const kotakKosongDescription =
+      String(electionDoc?.kotakKosong?.description || '').trim() || DEFAULT_KOTAK_KOSONG.tagline
+    const kotakKosongConfig = {
+      enabled: kotakKosongEnabled,
+      description: kotakKosongDescription,
+    }
+    const kotakKosongKabem = kotakKosongEnabled
+      ? { ...DEFAULT_KOTAK_KOSONG, tagline: kotakKosongDescription }
+      : null
+
     return {
       ready,
       name,
@@ -154,12 +166,17 @@ export default function ElectionProvider({ children }) {
       candidates,
       aiCandidates,
       kabemCandidates,
+      kotakKosongKabem,
+      kotakKosongConfig,
       usingDefaultCandidates,
       candidatesSeeded,
-      getCandidate: (id) => candidates.find((c) => c.id === id) || null,
+      getCandidate: (id) => {
+        if (kotakKosongKabem && id === kotakKosongKabem.id) return kotakKosongKabem
+        return candidates.find((c) => c.id === id) || null
+      },
       votingSteps: {
         ai: { ...VOTING_STEPS.ai, candidates: aiCandidates },
-        kabem: { ...VOTING_STEPS.kabem, candidates: kabemCandidates },
+        kabem: { ...VOTING_STEPS.kabem, candidates: kabemCandidates, blankOption: kotakKosongKabem },
       },
     }
   }, [

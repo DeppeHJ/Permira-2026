@@ -406,6 +406,58 @@ export function CandidateCard({ candidate, selected, onShowDetail, onChoose }) {
   )
 }
 
+export function KotakKosongCard({ option, selected, onChoose, className = '' }) {
+  return (
+    <article
+      className={`relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border bg-white p-6 shadow-2xl shadow-black/40 transition-all duration-300 sm:flex-row sm:items-center ${
+        selected
+          ? 'border-gold ring-4 ring-gold/70 -translate-y-1'
+          : 'border-amber-200/50 hover:-translate-y-1'
+      } ${className}`}
+      aria-label={option.name}
+    >
+      {selected && (
+        <span className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-gold px-3 py-1.5 text-xs font-extrabold text-card-dark shadow-lg">
+          <Check className="h-4 w-4" aria-hidden="true" />
+          Pilihan Anda
+        </span>
+      )}
+
+      <div className="flex items-start gap-4">
+        <div
+          aria-hidden="true"
+          className={`grid h-16 w-16 shrink-0 place-items-center rounded-xl border-2 border-dashed transition-colors ${
+            selected ? 'border-brand bg-amber-50' : 'border-stone-300 bg-cream'
+          }`}
+        >
+          <div className="h-7 w-7 rounded-md border-2 border-dashed border-ink-soft/40" />
+        </div>
+        <div className={`min-w-0 ${selected ? 'pr-24 sm:pr-28' : ''}`}>
+          <h3 className="text-xl font-extrabold leading-snug text-ink">{option.name}</h3>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-soft">{option.tagline}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onChoose(option)}
+        aria-pressed={selected}
+        className={`flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl px-6 text-sm font-bold text-white shadow-lg shadow-brand/30 transition-colors sm:min-w-48 ${
+          selected ? 'bg-card-dark' : 'bg-brand hover:bg-brand-hover'
+        }`}
+      >
+        {selected ? (
+          <>
+            <Check className="h-4 w-4 text-gold" aria-hidden="true" /> Terpilih
+          </>
+        ) : (
+          'Pilih Kotak Kosong'
+        )}
+      </button>
+    </article>
+  )
+}
+
 /* -------------------------------------------------------------------------- */
 /* Modal Visi & Misi                                                          */
 /* -------------------------------------------------------------------------- */

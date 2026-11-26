@@ -85,31 +85,7 @@ function sanitizeDisplayName(raw) {
 }
 
 function buildHtml(nama, otp) {
-  return `
-    <div style="font-family: Arial, sans-serif; background: #3D1203; padding: 32px;">
-      <div style="max-width: 480px; margin: auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-        <div style="background: #BA3D03; color: #ffffff; padding: 20px 24px; font-size: 20px; font-weight: bold; letter-spacing: 1px;">
-          PERMIRA 2026
-        </div>
-        <div style="padding: 28px 24px; color: #1F110B;">
-          <p style="font-size: 15px; margin: 0 0 12px;">Halo <b>${nama}</b>,</p>
-          <p style="font-size: 14px; color: #4A3B32; margin: 0 0 20px; line-height: 1.5;">
-            Berikut adalah kode One-Time Password (OTP) resmi Anda untuk memverifikasi bilik suara:
-          </p>
-          <div style="text-align: center; background: #FFF4E0; border: 2px dashed #BA3D03; border-radius: 12px; padding: 18px 0; margin: 20px 0;">
-            <span style="font-size: 38px; font-weight: bold; letter-spacing: 10px; color: #3D1203; font-family: monospace;">${otp}</span>
-          </div>
-          <p style="font-size: 12px; color: #856B5D; line-height: 1.5; margin: 16px 0 0;">
-            Kode ini berlaku <b>3 menit (${OTP_TTL_SECONDS} detik)</b> dan hanya dapat dipakai satu kali.
-            <b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.
-          </p>
-        </div>
-        <div style="background: #F7F4F0; padding: 14px 24px; text-align: center; font-size: 11px; color: #856B5D; border-top: 1px solid #ECE7E1;">
-          Panitia Pemilihan Raya Mahasiswa • Sistem E-Voting Resmi
-        </div>
-      </div>
-    </div>
-  `
+  return `<html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#3D1203;font-family:Arial,Helvetica,sans-serif;"><div style="font-family:Arial,Helvetica,sans-serif;background:#3D1203;padding:32px 16px;"><div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;"><div style="background:#BA3D03;color:#ffffff;padding:20px 24px;font-size:20px;font-weight:bold;letter-spacing:1px;">PERMIRA 2026</div><div style="padding:28px 24px;color:#1F110B;"><p style="font-size:15px;margin:0 0 12px;">Halo <b>${nama}</b>,</p><p style="font-size:14px;color:#4A3B32;margin:0 0 20px;line-height:1.5;">Berikut adalah kode One-Time Password (OTP) resmi Anda untuk memverifikasi bilik suara:</p><div style="text-align:center;background:#FFF4E0;border:2px dashed #BA3D03;border-radius:12px;padding:18px 0;margin:20px 0;"><span style="font-size:38px;font-weight:bold;letter-spacing:10px;color:#3D1203;font-family:monospace;">${otp}</span></div><p style="font-size:12px;color:#856B5D;line-height:1.5;margin:16px 0 0;">Kode ini berlaku <b>3 menit (${OTP_TTL_SECONDS} detik)</b> dan hanya dapat dipakai satu kali. <b>Jangan pernah membagikan kode ini kepada siapa pun</b>, termasuk pihak panitia.</p></div><div style="background:#F7F4F0;padding:14px 24px;text-align:center;font-size:11px;color:#856B5D;border-top:1px solid #ECE7E1;">Panitia Pemilihan Raya Mahasiswa &bull; Sistem E-Voting Resmi</div></div></div></body></html>`
 }
 
 async function resolveVoterFromDpt(npm, idToken, env) {
@@ -131,7 +107,7 @@ async function resolveVoterFromDpt(npm, idToken, env) {
     return { ok: false, status: 404, message: 'NPM tidak terdaftar dalam DPT.' }
   }
   if (!res.ok) {
-    return { ok: false, status: 502, message: 'Gagal memverifikasi data pemilih di DPT.' }
+    return { ok: false, status: 502, message: `Gagal memverifikasi data pemilih di DPT (HTTP ${res.status}).` }
   }
 
   const doc = await res.json()
@@ -196,6 +172,77 @@ async function sendViaZoho({ toEmail, toName, otp, env }) {
     console.error('Zoho CPaaS error:', res.status, bodyText)
     throw new Error(`Zoho CPaaS HTTP ${res.status}`)
   }
+}
+
+function extractApiErrorDetail(parsed) {
+  if (!parsed || typeof parsed !== 'object') return ''
+  const parts = []
+  if (typeof parsed.message === 'string' && parsed.message.trim()) {
+    parts.push(parsed.message.trim())
+  }
+  if (typeof parsed.errors === 'string' && parsed.errors.trim()) {
+    parts.push(parsed.errors.trim())
+  } else if (parsed.errors && typeof parsed.errors === 'object') {
+    const first = Object.entries(parsed.errors)
+      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`)
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('; ')
+    if (first) parts.push(first)
+  }
+  return parts.join(' - ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140)
+}
+
+async function sendViaMailketing({ toEmail, toName, otp, env }) {
+  const token = String(env.MAILKETING_API_TOKEN || '')
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim()
+  const endpoint = String(env.MAILKETING_API_URL || 'https://api.mailketing.co.id/api/v2/send').trim()
+  const senderEmail = String(env.SENDER_EMAIL || 'noreply@pemira-fikui.my.id').trim()
+  const senderName = String(env.SENDER_NAME || 'Panitia PERMIRA 2026').trim()
+
+  if (!token) {
+    throw new Error('MAILKETING_API_TOKEN belum dikonfigurasi')
+  }
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      from_name: senderName,
+      from_email: senderEmail,
+      subject: 'Kode OTP PERMIRA 2026',
+      recipient: toEmail,
+      content: buildHtml(toName, otp),
+    }),
+  })
+
+  const rawBody = await res.text().catch(() => '')
+  let parsed
+  try {
+    parsed = rawBody ? JSON.parse(rawBody) : null
+  } catch {
+    parsed = null
+  }
+
+  if (!res.ok || parsed?.success === false) {
+    console.error('Mailketing API error:', res.status, rawBody)
+    const detail = extractApiErrorDetail(parsed)
+    throw new Error(`Mailketing HTTP ${res.status}${detail ? `: ${detail}` : ''}`)
+  }
+}
+
+async function sendOtpEmail({ toEmail, toName, otp, env }) {
+  const provider = String(env.MAIL_PROVIDER || 'MAILKETING').trim().toUpperCase()
+  if (provider === 'ZOHO') {
+    return sendViaZoho({ toEmail, toName, otp, env })
+  }
+  return sendViaMailketing({ toEmail, toName, otp, env })
 }
 
 /**
@@ -317,7 +364,10 @@ export default {
     }
 
     if (request.method === 'GET') {
-      return jsonResponse(request, env, 200, true, 'PERMIRA 2026 OTP service aktif (Cloudflare + Zoho CPaaS).')
+      const provider = String(env.MAIL_PROVIDER || 'MAILKETING').trim().toUpperCase() === 'ZOHO'
+        ? 'Zoho CPaaS'
+        : 'Mailketing'
+      return jsonResponse(request, env, 200, true, `PERMIRA 2026 OTP service aktif (Cloudflare + ${provider}).`)
     }
 
     if (request.method !== 'POST') {
@@ -360,11 +410,23 @@ export default {
       }
 
       try {
-        await sendViaZoho({ toEmail: voter.email, toName: voter.nama, otp, env })
+        await sendOtpEmail({ toEmail: voter.email, toName: voter.nama, otp, env })
       } catch (err) {
         console.error('Gagal kirim OTP:', err)
         await stub.rollbackSend(salt)
-        return jsonResponse(request, env, 502, false, 'Gagal mengirim email OTP. Silakan coba lagi atau hubungi Panitia.')
+        const reason = String(err?.message || '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 140)
+        const suffix = reason ? ` (${reason})` : ''
+        return jsonResponse(
+          request,
+          env,
+          502,
+          false,
+          `Gagal mengirim email OTP${suffix}. Silakan coba lagi atau hubungi Panitia.`,
+        )
       }
 
       return jsonResponse(request, env, 200, true, 'Kode OTP telah dikirim.')
